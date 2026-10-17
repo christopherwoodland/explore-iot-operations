@@ -6,6 +6,12 @@ internal sealed class StoreApplicationPlatformProvider : IApplicationPlatformPro
 {
     private static readonly IApplicationPlatformProvider CurrentProvider =
         new StoreApplicationPlatformProvider();
+    private static readonly bool AllowHeartRate =
+        string.Equals(
+            Environment.GetEnvironmentVariable("BAND_ALLOW_HEART_RATE"),
+            "true",
+            StringComparison.OrdinalIgnoreCase
+        );
 
     private StoreApplicationPlatformProvider()
     {
@@ -31,7 +37,9 @@ internal sealed class StoreApplicationPlatformProvider : IApplicationPlatformPro
     }
 
     public UserConsent GetCurrentSensorConsent(Type sensorType) =>
-        UserConsent.NotSpecified;
+        AllowHeartRate && sensorType.Name == "HeartRateSensor"
+            ? UserConsent.Granted
+            : UserConsent.NotSpecified;
 
     public Task<bool> RequestSensorConsentAsync(
         Type sensorType,
@@ -40,6 +48,8 @@ internal sealed class StoreApplicationPlatformProvider : IApplicationPlatformPro
     )
     {
         token.ThrowIfCancellationRequested();
-        return Task.FromResult(false);
+        return Task.FromResult(
+            AllowHeartRate && sensorType.Name == "HeartRateSensor"
+        );
     }
 }

@@ -52,11 +52,11 @@ class SidecarBandAdapter:
                 continue
 
             timestamp = datetime.fromisoformat(payload["timestamp"])
-            values = {
+            values = payload.get("values", {
                 key: value
                 for key, value in payload.items()
                 if key not in {"type", "timestamp"}
-            }
+            })
             return BandTelemetry(
                 device_id=self._device_id,
                 timestamp=timestamp,

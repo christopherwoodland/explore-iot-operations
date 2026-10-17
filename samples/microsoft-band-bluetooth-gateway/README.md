@@ -15,12 +15,24 @@ Microsoft Band v1 --Bluetooth--> Windows gateway --MQTT/TLS--> IoT Operations
 ## Current status
 
 This proof of concept has successfully opened the Band v1 RFCOMM services and
-read live accelerometer telemetry on Windows. The Python gateway communicates
+read live sensor telemetry on Windows. The Python gateway communicates
 with a separately built community-SDK sidecar so GPL source and binaries remain
 outside this MIT repository.
 
-The gateway has also authenticated to the IoT Operations broker and delivered a
-physical accelerometer reading over MQTT/TLS.
+The gateway has also authenticated to the IoT Operations broker and delivered
+physical Band telemetry over MQTT/TLS.
+
+The sidecar attempts every live sensor exposed by the recovered SDK:
+accelerometer, gyroscope, heart rate, RR intervals, skin temperature, steps,
+calories, distance, contact/worn state, UV exposure, galvanic skin response,
+ambient light, barometer, and altimeter. Sensors report their own support and
+may be unavailable on a particular Band model or firmware.
+
+Heart rate and RR intervals require explicit consent. Set
+`BAND_ALLOW_HEART_RATE=true` only after obtaining the user's permission. The
+Band v1 has no SpO2 sensor and does not expose sleep state or respiratory rate
+as live sensor readings. HRV is calculated as RMSSD from collected RR
+intervals; it is not a native Band measurement.
 
 ## Probe the Band connection
 
@@ -192,10 +204,29 @@ Telemetry is published as JSON, for example:
   "deviceId": "microsoft-band-v1-01",
   "timestamp": "2026-10-17T17:00:00+00:00",
   "heartRateBpm": 72,
+  "heartRateVariability": {
+    "rmssdMs": 42.1,
+    "sampleCount": 12
+  },
+  "skinTemperatureCelsius": 31.2,
+  "steps": {
+    "total": 488770,
+    "today": 3421
+  },
   "accelerometer": {
     "x": 0.03,
     "y": 0.98,
     "z": 0.12
+  },
+  "sensorStatus": {
+    "accelerometer": "started",
+    "heartRate": "started",
+    "rrInterval": "not_supported"
+  },
+  "unsupported": {
+    "spo2": "not_available_on_microsoft_band_v1",
+    "respiratoryRate": "not_measured; requires validated derivation",
+    "sleepState": "not_available_from_live_sensor_api"
   }
 }
 ```
@@ -204,21 +235,24 @@ Register the MQTT asset manually in Azure IoT Operations after telemetry is
 visible. MQTT assets are not automatically discovered by the IoT Operations
 Discovery experience.
 
-## Next implementation step
+## Data limitations and next steps
 
-Implement `BandAdapter.read()` using a verified Microsoft Band v1-compatible
-library or a small Windows-native adapter. Keep the adapter responsible only
-for Bluetooth discovery, pairing, sensor reads, and reconnect behavior. Do not
-put MQTT or Azure-specific code in that adapter.
+The Band v1 hardware observed in this sample provides accelerometer,
+gyroscope, skin temperature, pedometer, calories, distance, contact state, and
+UV readings. Heart rate is available when explicit consent is enabled and the
+Band is worn. RR interval, GSR, ambient light, barometer, and altimeter are
+reported by the SDK but are not supported by this Band's firmware.
 
-After local readings are stable:
+SpO2 is not present in the Band v1 sensor set. Sleep state is historical
+summary data rather than a live sensor stream, and respiratory rate is not
+provided by the SDK. A future analytics stage could derive activity epochs or
+respiratory estimates from accelerometer and heart-rate data, but those should
+be labeled as derived values and validated separately.
 
-1. Add reconnect and stale-reading handling.
-2. Test publishing to the IoT Operations broker.
-3. Register the MQTT asset and data points.
-4. Consider a Windows service deployment.
-5. Only then evaluate an Akri connector. A WASM data-flow module is for
-   transforming telemetry after ingestion, not for owning Bluetooth hardware.
+The next engineering steps are reconnect and stale-reading handling, then
+continuous Windows service operation and historical sleep/activity ingestion
+if the Band admin protocol exposes those records. A WASM data-flow module is
+for transforming telemetry after ingestion, not for owning Bluetooth hardware.
 
 ## References
 
