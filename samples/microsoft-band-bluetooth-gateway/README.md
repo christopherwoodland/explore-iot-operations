@@ -383,6 +383,36 @@ analytics stage could derive activity epochs or respiratory estimates from
 accelerometer and heart-rate data, but those should be labeled as derived
 values and validated separately.
 
+## Physical pipeline validation (2026-10-17)
+
+The release sidecar built with zero warnings/errors and all 17 Python tests
+passed. A physical Band run verified:
+
+- One sidecar PID persisted across successive sensor snapshots.
+- The source and unified asset topics each delivered 31 messages with 31
+  unique unified message IDs, using only the `telemetry` dataset.
+- Heart-rate quality transitioned through `Acquiring` and `Locked`.
+- Accelerometer, gyroscope, skin temperature, steps, calories, distance,
+  contact and heart-rate freshness envelopes were valid.
+- UV produced readings in an earlier run but remained `awaiting_reading` in
+  the final run. Unsupported sensors remained explicitly marked.
+- Terminating the adapter process caused the gateway to establish a new
+  connection and resume physical collection.
+- Interrupting only the gateway's MQTT tunnel allowed four snapshots to
+  accumulate in the durable outbox. After terminating/restarting the gateway
+  and restoring the tunnel, all four IDs reached the unified topic with their
+  original payloads and timestamps. The outbox drained completely.
+
+The monitoring subscriber must finish resubscribing before replay starts;
+a nonpersistent monitoring session can otherwise miss messages during its own
+disconnection even though the publisher receives PUBACKs.
+
+This was a short integration test, not a long-duration soak or a real
+Bluetooth-radio/out-of-range test. Actual radio loss, restart of the broker
+itself, stale-sensor hardware faults and Scheduled Task startup still need
+separate physical testing. Sensor staleness and retry behavior also have
+automated coverage. Test telemetry and logs remain in ignored local storage.
+
 ## References
 
 - [Azure IoT Operations developer guide](https://learn.microsoft.com/azure/iot-operations/develop-edge-apps/overview-iot-operations-development)
