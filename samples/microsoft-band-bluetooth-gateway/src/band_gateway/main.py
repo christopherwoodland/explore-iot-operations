@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
+import json
 import logging
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
 import time
 from typing import Protocol
 
@@ -52,6 +56,18 @@ def publish_once(
     config: GatewayConfig, adapter: BandAdapter, client: mqtt.Client
 ) -> None:
     reading = adapter.read()
+    age_seconds = (
+        datetime.now(timezone.utc) - reading.timestamp.astimezone(timezone.utc)
+    ).total_seconds()
+    if age_seconds > config.stale_after_seconds:
+        raise RuntimeError(
+            f"Band reading is stale by {age_seconds:.1f} seconds "
+            f"(limit {config.stale_after_seconds:.1f})."
+        )
+    if age_seconds < -5:
+        raise RuntimeError(
+            f"Band reading timestamp is {abs(age_seconds):.1f} seconds in the future."
+        )
     result = client.publish(
         f"{config.topic_prefix}/telemetry",
         payload=reading.to_json(),
@@ -60,6 +76,32 @@ def publish_once(
     result.wait_for_publish()
     if result.rc != mqtt.MQTT_ERR_SUCCESS:
         raise RuntimeError(f"MQTT publish failed with result code {result.rc}")
+    archive_path = Path(config.telemetry_archive_path)
+    archive_path.parent.mkdir(parents=True, exist_ok=True)
+    with archive_path.open("a", encoding="utf-8") as archive:
+        archive.write(reading.to_json())
+        archive.write("\n")
+
+
+def configure_logging(log_path: str) -> None:
+    path = Path(log_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    formatter = logging.Formatter(
+        "%(asctime)s %(levelname)s %(name)s %(message)s"
+    )
+    file_handler = RotatingFileHandler(
+        path,
+        maxBytes=5 * 1024 * 1024,
+        backupCount=5,
+        encoding="utf-8",
+    )
+    file_handler.setFormatter(formatter)
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    logging.basicConfig(
+        level=logging.INFO,
+        handlers=[file_handler, console_handler],
+    )
 
 
 def publish_continuously(
@@ -97,31 +139,31 @@ def publish_continuously(
 
 
 def connect_with_retry(
-        config: GatewayConfig,
-        client: mqtt.Client,
-        max_consecutive_failures: int,
+    config: GatewayConfig,
+    client: mqtt.Client,
+    max_consecutive_failures: int,
 ) -> None:
-        consecutive_failures = 0
-        while True:
-            try:
-                client.connect(config.mqtt_host, config.mqtt_port)
-                return
-            except (OSError, RuntimeError) as error:
-                consecutive_failures += 1
-                LOGGER.error(
-                    "MQTT connection failed (%s/%s): %s",
-                    consecutive_failures,
-                    max_consecutive_failures or "unlimited",
-                    error,
-                )
-                if (
-                    max_consecutive_failures > 0
-                    and consecutive_failures >= max_consecutive_failures
-                ):
-                    raise RuntimeError(
-                        "Stopping after the configured MQTT connection failure limit."
-                    ) from error
-                time.sleep(5)
+    consecutive_failures = 0
+    while True:
+        try:
+            client.connect(config.mqtt_host, config.mqtt_port)
+            return
+        except (OSError, RuntimeError) as error:
+            consecutive_failures += 1
+            LOGGER.error(
+                "MQTT connection failed (%s/%s): %s",
+                consecutive_failures,
+                max_consecutive_failures or "unlimited",
+                error,
+            )
+            if (
+                max_consecutive_failures > 0
+                and consecutive_failures >= max_consecutive_failures
+            ):
+                raise RuntimeError(
+                    "Stopping after the configured MQTT connection failure limit."
+                ) from error
+            time.sleep(5)
 
 
 def main() -> None:
@@ -154,11 +196,8 @@ def main() -> None:
     if args.max_consecutive_failures < 0:
         parser.error("--max-consecutive-failures cannot be negative")
 
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s %(message)s",
-    )
     config = GatewayConfig.from_environment()
+    configure_logging(config.log_path)
     adapter = SidecarBandAdapter(
         device_id=config.device_id,
         sidecar_path=config.band_sidecar_path,
@@ -170,7 +209,11 @@ def main() -> None:
     client = create_mqtt_client(config)
     LOGGER.info("Connecting to MQTT broker %s:%s", config.mqtt_host, config.mqtt_port)
     if args.continuous:
-        connect_with_retry(client=client, config=config, max_consecutive_failures=args.max_consecutive_failures)
+        connect_with_retry(
+            client=client,
+            config=config,
+            max_consecutive_failures=args.max_consecutive_failures,
+        )
     else:
         client.connect(config.mqtt_host, config.mqtt_port)
     client.loop_start()

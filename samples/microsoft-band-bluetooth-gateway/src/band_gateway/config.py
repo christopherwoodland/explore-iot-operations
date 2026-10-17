@@ -33,6 +33,9 @@ class GatewayConfig:
     mqtt_ca_cert: str | None
     mqtt_client_id: str
     topic_prefix: str
+    log_path: str
+    telemetry_archive_path: str
+    stale_after_seconds: float
 
     @classmethod
     def from_environment(cls) -> "GatewayConfig":
@@ -49,4 +52,12 @@ class GatewayConfig:
             mqtt_ca_cert=os.getenv("MQTT_CA_CERT") or None,
             mqtt_client_id=_required("MQTT_CLIENT_ID"),
             topic_prefix=_required("MQTT_TOPIC_PREFIX").rstrip("/"),
+            log_path=os.getenv("BAND_LOG_PATH", "logs/band-gateway.log"),
+            telemetry_archive_path=os.getenv(
+                "BAND_TELEMETRY_ARCHIVE_PATH",
+                "data/telemetry.jsonl",
+            ),
+            stale_after_seconds=float(
+                os.getenv("BAND_STALE_AFTER_SECONDS", "30")
+            ),
         )

@@ -39,4 +39,3 @@ if ($LASTEXITCODE -ne 0) {
     throw 'Failed to build the Microsoft Band SDK sidecar.'
 }
 Write-Host 'Band SDK sidecar installed successfully.'
-Write-Host 'Band SDK sidecar installed successfully.'

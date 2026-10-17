@@ -89,6 +89,7 @@ samples/microsoft-band-bluetooth-gateway/
 │   ├── Configure-AioMqttAccess.ps1
 │   ├── Install-BandSdkSidecar.ps1
 │   ├── Invoke-BandGateway.ps1
+│   ├── Register-BandGatewayTask.ps1
 │   └── Register-AioAsset.ps1
 ├── sidecar/
 │   └── BandSdkSidecar/
@@ -184,6 +185,32 @@ the failure and retries. A new sidecar process on the next cycle also
 re-establishes the Band connection. Add
 `-MaxConsecutiveFailures 5` when a bounded failure policy is preferred.
 
+The gateway writes rotating logs to `logs/band-gateway.log` and appends each
+successfully published reading to `data/telemetry.jsonl`. Both paths are
+ignored by Git and can be changed with `BAND_LOG_PATH` and
+`BAND_TELEMETRY_ARCHIVE_PATH`. The archive is a simple local time-series
+destination for development and can be ingested later into Azure Data Explorer,
+a lakehouse, or another historical store.
+
+Each reading is rejected if its timestamp is older than
+`BAND_STALE_AFTER_SECONDS` (30 seconds by default), preventing stale Bluetooth
+data from being published as current telemetry.
+
+For automatic restart at Windows logon, register a Scheduled Task from an
+elevated PowerShell prompt:
+
+```powershell
+.\scripts\Register-BandGatewayTask.ps1
+Start-ScheduledTask -TaskName 'Microsoft Band IoT Gateway'
+```
+
+The task starts the existing continuous launcher, which owns the localhost
+MQTT tunnel and retries failed MQTT and Band sidecar cycles. Remove it with:
+
+```powershell
+Unregister-ScheduledTask -TaskName 'Microsoft Band IoT Gateway' -Confirm:$false
+```
+
 Register the Windows gateway connection and physical Band in Azure Device
 Registry:
 
@@ -266,10 +293,20 @@ provided by the SDK. A future analytics stage could derive activity epochs or
 respiratory estimates from accelerometer and heart-rate data, but those should
 be labeled as derived values and validated separately.
 
-The next engineering steps are reconnect and stale-reading handling, then
-continuous Windows service operation and historical sleep/activity ingestion
-if the Band admin protocol exposes those records. A WASM data-flow module is
-for transforming telemetry after ingestion, not for owning Bluetooth hardware.
+The current sample now covers continuous retries, stale-reading rejection,
+durable local logs, a development time-series archive, and Windows Scheduled
+Task startup. Heart-rate and RR-interval collection remains disabled unless
+explicit consent is configured:
+
+```text
+BAND_ALLOW_HEART_RATE=true
+```
+
+After enabling it, wear the Band and inspect the archived payload and MQTT
+topic for `heartRateBpm`, `heartRateQuality`, and `rrIntervalMs`. A future
+analytics stage could derive activity epochs or respiratory estimates from
+accelerometer and heart-rate data, but those should be labeled as derived
+values and validated separately.
 
 ## References
 
