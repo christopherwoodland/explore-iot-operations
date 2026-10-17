@@ -1,371 +1,263 @@
+using System.Diagnostics;
+using System.Globalization;
 using System.Text.Json;
 using Microsoft.Band;
 using Microsoft.Band.Sensors;
 
-int sampleCount = ParseSampleCount(args);
-IBandInfo[] bands = await BandClientManager.Instance.GetBandsAsync();
-if (bands.Length == 0)
+int sampleCount = int.Parse(GetArgument("--samples", "1"), CultureInfo.InvariantCulture);
+double interval = double.Parse(GetArgument("--interval-seconds", "5"), CultureInfo.InvariantCulture);
+bool continuous = args.Contains("--continuous");
+if (sampleCount < 1 || !double.IsFinite(interval) || interval <= 0)
 {
-    Console.Error.WriteLine("No paired Microsoft Band was found.");
+    throw new ArgumentException("Sample count and interval must be positive.");
+}
+if (args.Contains("--list-devices"))
+{
+    foreach (IBandInfo band in await BandClientManager.Instance.GetBandsAsync())
+    {
+        Console.WriteLine(JsonSerializer.Serialize(new { type = "device", name = band.Name }));
+    }
+    return 0;
+}
+
+string? selectedName = Environment.GetEnvironmentVariable("BAND_DEVICE_NAME");
+IBandInfo[] bands = await BandClientManager.Instance.GetBandsAsync();
+IBandInfo[] candidates = bands.Where(b =>
+    string.IsNullOrWhiteSpace(selectedName) || b.Name == selectedName).ToArray();
+if (candidates.Length != 1)
+{
+    Console.Error.WriteLine(
+        $"Expected exactly one matching Band, found {candidates.Length}. "
+        + "Use --list-devices and set BAND_DEVICE_NAME to an exact, unique name.");
     return 2;
 }
 
-using IBandClient client = await BandClientManager.Instance.ConnectAsync(bands[0]);
+using var cancellation = new CancellationTokenSource();
+Console.CancelKeyPress += (_, eventArgs) =>
+{
+    eventArgs.Cancel = true;
+    cancellation.Cancel();
+};
+using IBandClient client = await BandClientManager.Instance.ConnectAsync(candidates[0]);
 Console.WriteLine(JsonSerializer.Serialize(new
 {
     type = "device",
-    name = bands[0].Name,
+    name = candidates[0].Name,
     firmwareVersion = await client.GetFirmwareVersionAsync(),
     hardwareVersion = await client.GetHardwareVersionAsync(),
 }));
 
-var values = new Dictionary<string, object?>();
-var sensorStatus = new Dictionary<string, string>();
-var rrIntervals = new List<double>();
-var valuesLock = new object();
-var firstReading = new TaskCompletionSource(
-    TaskCreationOptions.RunContinuationsAsynchronously
-);
-
-IBandSensor<IBandAccelerometerReading> accelerometer = client.SensorManager.Accelerometer;
-IBandSensor<IBandGyroscopeReading> gyroscope = client.SensorManager.Gyroscope;
-IBandSensor<IBandHeartRateReading> heartRate = client.SensorManager.HeartRate;
-IBandSensor<IBandRRIntervalReading> rrInterval = client.SensorManager.RRInterval;
-IBandSensor<IBandSkinTemperatureReading> skinTemperature = client.SensorManager.SkinTemperature;
-IBandSensor<IBandPedometerReading> pedometer = client.SensorManager.Pedometer;
-IBandSensor<IBandCaloriesReading> calories = client.SensorManager.Calories;
-IBandSensor<IBandDistanceReading> distance = client.SensorManager.Distance;
-IBandContactSensor contact = client.SensorManager.Contact;
-IBandSensor<IBandUVReading> uv = client.SensorManager.UV;
-IBandSensor<IBandGsrReading> gsr = client.SensorManager.Gsr;
-IBandSensor<IBandAmbientLightReading> ambientLight = client.SensorManager.AmbientLight;
-IBandSensor<IBandBarometerReading> barometer = client.SensorManager.Barometer;
-IBandSensor<IBandAltimeterReading> altimeter = client.SensorManager.Altimeter;
-
-accelerometer.ReadingChanged += (_, eventArgs) =>
-{
-    IBandAccelerometerReading reading = eventArgs.SensorReading;
-    lock (valuesLock)
-    {
-        values["accelerometer"] = new
-        {
-            x = reading.AccelerationX,
-            y = reading.AccelerationY,
-            z = reading.AccelerationZ,
-        };
-    }
-    firstReading.TrySetResult();
-};
-
-gyroscope.ReadingChanged += (_, eventArgs) =>
-{
-    IBandGyroscopeReading reading = eventArgs.SensorReading;
-    lock (valuesLock)
-    {
-        values["gyroscope"] = new
-        {
-            x = reading.AngularVelocityX,
-            y = reading.AngularVelocityY,
-            z = reading.AngularVelocityZ,
-        };
-    }
-};
-
-heartRate.ReadingChanged += (_, eventArgs) =>
-{
-    IBandHeartRateReading reading = eventArgs.SensorReading;
-    lock (valuesLock)
-    {
-        values["heartRateBpm"] = reading.HeartRate;
-        values["heartRateQuality"] = reading.Quality.ToString();
-    }
-};
-
-rrInterval.ReadingChanged += (_, eventArgs) =>
-{
-    lock (valuesLock)
-    {
-        rrIntervals.Add(eventArgs.SensorReading.Interval);
-        values["rrIntervalMs"] = eventArgs.SensorReading.Interval;
-    }
-};
-
-skinTemperature.ReadingChanged += (_, eventArgs) =>
-{
-    lock (valuesLock)
-    {
-        values["skinTemperatureCelsius"] = eventArgs.SensorReading.Temperature;
-    }
-};
-
-pedometer.ReadingChanged += (_, eventArgs) =>
-{
-    IBandPedometerReading reading = eventArgs.SensorReading;
-    lock (valuesLock)
-    {
-        values["steps"] = new
-        {
-            total = reading.TotalSteps,
-            today = reading.StepsToday,
-        };
-    }
-};
-
-calories.ReadingChanged += (_, eventArgs) =>
-{
-    IBandCaloriesReading reading = eventArgs.SensorReading;
-    lock (valuesLock)
-    {
-        values["calories"] = new
-        {
-            total = reading.Calories,
-            today = reading.CaloriesToday,
-        };
-    }
-};
-
-distance.ReadingChanged += (_, eventArgs) =>
-{
-    IBandDistanceReading reading = eventArgs.SensorReading;
-    lock (valuesLock)
-    {
-        values["distance"] = new
-        {
-            totalMeters = reading.TotalDistance,
-            todayMeters = reading.DistanceToday,
-            speedMetersPerSecond = reading.Speed,
-            pace = reading.Pace,
-            motion = reading.CurrentMotion.ToString(),
-        };
-    }
-};
-
-contact.ReadingChanged += (_, eventArgs) =>
-{
-    lock (valuesLock)
-    {
-        values["contact"] = eventArgs.SensorReading.State.ToString();
-    }
-};
-
-uv.ReadingChanged += (_, eventArgs) =>
-{
-    IBandUVReading reading = eventArgs.SensorReading;
-    lock (valuesLock)
-    {
-        values["ultraviolet"] = new
-        {
-            indexLevel = reading.IndexLevel.ToString(),
-            exposureToday = reading.ExposureToday,
-        };
-    }
-};
-
-gsr.ReadingChanged += (_, eventArgs) =>
-{
-    lock (valuesLock)
-    {
-        values["galvanicSkinResponse"] = new
-        {
-            resistance = eventArgs.SensorReading.Resistance,
-            unit = "ohms",
-        };
-    }
-};
-
-ambientLight.ReadingChanged += (_, eventArgs) =>
-{
-    lock (valuesLock)
-    {
-        values["ambientLight"] = new
-        {
-            brightness = eventArgs.SensorReading.Brightness,
-        };
-    }
-};
-
-barometer.ReadingChanged += (_, eventArgs) =>
-{
-    IBandBarometerReading reading = eventArgs.SensorReading;
-    lock (valuesLock)
-    {
-        values["barometer"] = new
-        {
-            airPressure = reading.AirPressure,
-            temperatureCelsius = reading.Temperature,
-        };
-    }
-};
-
-altimeter.ReadingChanged += (_, eventArgs) =>
-{
-    IBandAltimeterReading reading = eventArgs.SensorReading;
-    lock (valuesLock)
-    {
-        values["altimeter"] = new
-        {
-            totalGain = reading.TotalGain,
-            totalLoss = reading.TotalLoss,
-            steppingGain = reading.SteppingGain,
-            steppingLoss = reading.SteppingLoss,
-            stepsAscended = reading.StepsAscended,
-            stepsDescended = reading.StepsDescended,
-            rate = reading.Rate,
-            flightsAscended = reading.FlightsAscended,
-            flightsDescended = reading.FlightsDescended,
-            flightsAscendedToday = reading.FlightsAscendedToday,
-            totalGainToday = reading.TotalGainToday,
-        };
-    }
-};
-
-var startedSensors = new List<(string Name, Func<Task> Stop)>();
+var gate = new object();
+var sensors = new Dictionary<string, SensorState>();
+var stops = new List<Func<Task>>();
+var rrIntervals = new Queue<double>();
 try
 {
-    await StartSensorAsync("accelerometer", accelerometer, startedSensors, sensorStatus);
-    await StartSensorAsync("gyroscope", gyroscope, startedSensors, sensorStatus);
-    if (IsEnabled("BAND_ALLOW_HEART_RATE"))
+    await Subscribe("accelerometer", client.SensorManager.Accelerometer, r => new
     {
-        await StartSensorAsync("heartRate", heartRate, startedSensors, sensorStatus);
-        await StartSensorAsync("rrInterval", rrInterval, startedSensors, sensorStatus);
-    }
-    else
+        x = r.AccelerationX, y = r.AccelerationY, z = r.AccelerationZ,
+    }, "g", 5);
+    await Subscribe("gyroscope", client.SensorManager.Gyroscope, r => new
     {
-        sensorStatus["heartRate"] = "consent_required";
-        sensorStatus["rrInterval"] = "consent_required";
-    }
-    await StartSensorAsync("skinTemperature", skinTemperature, startedSensors, sensorStatus);
-    await StartSensorAsync("pedometer", pedometer, startedSensors, sensorStatus);
-    await StartSensorAsync("calories", calories, startedSensors, sensorStatus);
-    await StartSensorAsync("distance", distance, startedSensors, sensorStatus);
-    await StartSensorAsync("contact", contact, startedSensors, sensorStatus);
-    await StartSensorAsync("uv", uv, startedSensors, sensorStatus);
-    await StartSensorAsync("gsr", gsr, startedSensors, sensorStatus);
-    await StartSensorAsync("ambientLight", ambientLight, startedSensors, sensorStatus);
-    await StartSensorAsync("barometer", barometer, startedSensors, sensorStatus);
-    await StartSensorAsync("altimeter", altimeter, startedSensors, sensorStatus);
-
-    await firstReading.Task.WaitAsync(TimeSpan.FromSeconds(15));
-    await Task.Delay(TimeSpan.FromSeconds(5));
-
-    lock (valuesLock)
+        x = r.AngularVelocityX, y = r.AngularVelocityY, z = r.AngularVelocityZ,
+    }, "deg/s", 5);
+    bool allowHeartRate = string.Equals(
+        Environment.GetEnvironmentVariable("BAND_ALLOW_HEART_RATE"),
+        "true", StringComparison.OrdinalIgnoreCase);
+    await Subscribe("heartRate", client.SensorManager.HeartRate, r => new
     {
-        if (rrIntervals.Count >= 2)
+        bpm = r.HeartRate, quality = r.Quality.ToString(),
+    }, "beats/min", 15, allowHeartRate);
+    await Subscribe("rrInterval", client.SensorManager.RRInterval, r =>
+    {
+        // The SDK reports RR intervals in seconds; publish milliseconds.
+        double milliseconds = r.Interval * 1000;
+        rrIntervals.Enqueue(milliseconds);
+        while (rrIntervals.Count > 256)
         {
-            values["heartRateVariability"] = new
+            rrIntervals.Dequeue();
+        }
+        return milliseconds;
+    }, "ms", 15, allowHeartRate);
+    await Subscribe("skinTemperature", client.SensorManager.SkinTemperature,
+        r => r.Temperature, "Cel", 60);
+    await Subscribe("pedometer", client.SensorManager.Pedometer,
+        r => new { total = r.TotalSteps, today = r.StepsToday }, "steps", 120);
+    await Subscribe("calories", client.SensorManager.Calories,
+        r => new { total = r.Calories, today = r.CaloriesToday }, "kcal", 120);
+    await Subscribe("distance", client.SensorManager.Distance, r => new
+    {
+        totalMeters = r.TotalDistance / 100.0,
+        todayMeters = r.DistanceToday / 100.0,
+        speedMetersPerSecond = r.Speed / 100.0,
+        paceSecondsPerMeter = r.Pace / 1000.0,
+        motion = r.CurrentMotion.ToString(),
+    }, "SI", 120);
+    await Subscribe("contact", client.SensorManager.Contact,
+        r => r.State.ToString(), null, 60);
+    await Subscribe("uv", client.SensorManager.UV,
+        r => new { indexLevel = r.IndexLevel.ToString(), exposureToday = r.ExposureToday },
+        null, 120);
+    await Subscribe("gsr", client.SensorManager.Gsr, r => r.Resistance, "ohm", 60);
+    await Subscribe("ambientLight", client.SensorManager.AmbientLight,
+        r => r.Brightness, null, 60);
+    await Subscribe("barometer", client.SensorManager.Barometer,
+        r => new { airPressure = r.AirPressure, temperatureCelsius = r.Temperature },
+        null, 60);
+    await Subscribe("altimeter", client.SensorManager.Altimeter, r => new
+    {
+        totalGain = r.TotalGain, totalLoss = r.TotalLoss,
+        steppingGain = r.SteppingGain, steppingLoss = r.SteppingLoss,
+        stepsAscended = r.StepsAscended, stepsDescended = r.StepsDescended,
+        rate = r.Rate, flightsAscended = r.FlightsAscended,
+        flightsDescended = r.FlightsDescended,
+        flightsAscendedToday = r.FlightsAscendedToday, totalGainToday = r.TotalGainToday,
+    }, null, 120);
+
+    // Keep subscriptions alive across snapshots, including heart-rate acquisition.
+    DateTimeOffset startedAt = DateTimeOffset.UtcNow;
+    for (int sample = 0; continuous || sample < sampleCount; sample++)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(interval), cancellation.Token);
+        Dictionary<string, object> snapshot;
+        lock (gate)
+        {
+            SensorState motion = sensors["accelerometer"];
+            if ((motion.ReceivedAt is null
+                    && (DateTimeOffset.UtcNow - startedAt).TotalSeconds > 20)
+                || (motion.ReceivedAt is not null
+                    && Stopwatch.GetElapsedTime(motion.Ticks).TotalSeconds > 20))
             {
-                rmssdMs = CalculateRmssd(rrIntervals),
-                sampleCount = rrIntervals.Count,
-            };
+                throw new TimeoutException("Band motion stream stopped; reconnect required.");
+            }
+            snapshot = sensors.ToDictionary(p => p.Key, p => p.Value.Snapshot());
+            SensorState rr = sensors["rrInterval"];
+            if (rrIntervals.Count >= 2 && rr.ReceivedAt is not null
+                && Stopwatch.GetElapsedTime(rr.Ticks).TotalSeconds <= rr.StaleAfterSeconds)
+            {
+                double[] samples = rrIntervals.ToArray();
+                double sum = samples.Zip(samples.Skip(1), (a, b) => (b - a) * (b - a)).Sum();
+                snapshot["heartRateVariability"] = new
+                {
+                    status = "fresh", value = Math.Sqrt(sum / (samples.Length - 1)),
+                    unit = "ms", method = "RMSSD", sampleCount = samples.Length,
+                    receivedAt = rr.ReceivedAt, timestampBasis = "gateway_receipt",
+                    ageMs = Stopwatch.GetElapsedTime(rr.Ticks).TotalMilliseconds,
+                };
+            }
         }
-    }
-
-    var telemetry = new Dictionary<string, object?>
-    {
-        ["type"] = "telemetry",
-        ["timestamp"] = DateTimeOffset.UtcNow,
-        ["unsupported"] = new
+        Console.WriteLine(JsonSerializer.Serialize(new
         {
-            spo2 = "not_available_on_microsoft_band_v1",
-            respiratoryRate = "not_measured; requires validated derivation",
-            sleepState = "not_available_from_live_sensor_api",
-        },
-        ["sensorStatus"] = sensorStatus,
-    };
-    lock (valuesLock)
-    {
-        foreach ((string key, object? value) in values)
-        {
-            telemetry[key] = value;
-        }
+            type = "telemetry", schemaVersion = 2,
+            timestamp = DateTimeOffset.UtcNow, bandName = candidates[0].Name,
+            sensors = snapshot,
+            unsupported = new
+            {
+                spo2 = "not_available_on_microsoft_band_v1",
+                respiratoryRate = "not_measured",
+                sleepState = "not_available_from_live_sensor_api",
+            },
+        }));
     }
-    Console.WriteLine(JsonSerializer.Serialize(telemetry));
 }
-catch (TimeoutException)
+catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
 {
-    Console.Error.WriteLine("Timed out waiting for Band accelerometer data.");
-    return 4;
+    Console.Error.WriteLine("Band stream stopped.");
 }
 finally
 {
-    foreach ((_, Func<Task> stop) in startedSensors)
+    foreach (Func<Task> stop in stops)
     {
-        await stop();
+        try
+        {
+            await stop().WaitAsync(TimeSpan.FromSeconds(3));
+        }
+        catch (Exception error)
+        {
+            Console.Error.WriteLine($"Sensor cleanup failed: {error.Message}");
+        }
     }
 }
-
 return 0;
 
-static async Task StartSensorAsync<T>(
-    string name,
-    IBandSensor<T> sensor,
-    List<(string Name, Func<Task> Stop)> startedSensors,
-    Dictionary<string, string> sensorStatus
+async Task Subscribe<T>(
+    string name, IBandSensor<T> sensor, Func<T, object> map,
+    string? unit, double staleAfterSeconds, bool consent = true
 ) where T : IBandSensorReading
 {
+    var state = new SensorState(unit, staleAfterSeconds);
+    sensors[name] = state;
     if (!sensor.IsSupported)
     {
-        sensorStatus[name] = "not_supported";
-        Console.Error.WriteLine($"Band sensor not supported: {name}");
+        state.Status = "not_supported";
         return;
     }
-
+    if (!consent)
+    {
+        state.Status = "consent_required";
+        return;
+    }
+    sensor.ReadingChanged += (_, eventArgs) =>
+    {
+        lock (gate)
+        {
+            state.Value = map(eventArgs.SensorReading);
+            state.SourceTimestamp = eventArgs.SensorReading.Timestamp;
+            state.ReceivedAt = DateTimeOffset.UtcNow;
+            state.Ticks = Stopwatch.GetTimestamp();
+        }
+    };
     try
     {
-        if (!await sensor.StartReadingsAsync())
+        bool accepted = await sensor.StartReadingsAsync();
+        state.Status = accepted ? "awaiting_reading" : "subscription_rejected";
+        if (accepted)
         {
-            sensorStatus[name] = "subscription_rejected";
-            Console.Error.WriteLine($"Band sensor subscription rejected: {name}");
-            return;
+            stops.Add(sensor.StopReadingsAsync);
         }
-
-        sensorStatus[name] = "started";
-        startedSensors.Add((name, sensor.StopReadingsAsync));
+        else
+        {
+            Console.Error.WriteLine($"Sensor subscription rejected: {name}");
+        }
     }
-    catch (Exception exception)
+    catch (Exception error)
     {
-        sensorStatus[name] = "unavailable";
-        Console.Error.WriteLine($"Band sensor unavailable: {name}: {exception.Message}");
+        state.Status = "unavailable";
+        Console.Error.WriteLine($"Sensor unavailable: {name}: {error.Message}");
     }
 }
 
-static double CalculateRmssd(IEnumerable<double> intervals)
+string GetArgument(string name, string fallback)
 {
-    double[] samples = intervals.ToArray();
-    double squaredDifferenceSum = 0;
-    for (int index = 1; index < samples.Length; index++)
-    {
-        double difference = samples[index] - samples[index - 1];
-        squaredDifferenceSum += difference * difference;
-    }
-
-    return Math.Sqrt(squaredDifferenceSum / (samples.Length - 1));
+    int index = Array.IndexOf(args, name);
+    if (index < 0) return fallback;
+    if (index + 1 >= args.Length) throw new ArgumentException($"Missing value for {name}.");
+    return args[index + 1];
 }
 
-static bool IsEnabled(string name)
+internal sealed class SensorState(string? unit, double staleAfterSeconds)
 {
-    string? value = Environment.GetEnvironmentVariable(name);
-    return value is not null
-        && (value.Equals("1", StringComparison.OrdinalIgnoreCase)
-            || value.Equals("true", StringComparison.OrdinalIgnoreCase)
-            || value.Equals("yes", StringComparison.OrdinalIgnoreCase));
-}
+    public string Status { get; set; } = "awaiting_reading";
+    public object? Value { get; set; }
+    public DateTimeOffset? SourceTimestamp { get; set; }
+    public DateTimeOffset? ReceivedAt { get; set; }
+    public long Ticks { get; set; }
+    public double StaleAfterSeconds { get; } = staleAfterSeconds;
 
-static int ParseSampleCount(string[] arguments)
-{
-    int index = Array.FindIndex(
-        arguments,
-        argument => argument.Equals("--samples", StringComparison.OrdinalIgnoreCase)
-    );
-    if (index < 0)
+    public object Snapshot()
     {
-        return 1;
+        double? age = ReceivedAt is null ? null : Stopwatch.GetElapsedTime(Ticks).TotalMilliseconds;
+        bool fresh = age is not null && age <= StaleAfterSeconds * 1000;
+        return new
+        {
+            status = ReceivedAt is null ? Status : fresh ? "fresh" : "stale",
+            value = fresh ? Value : null,
+            unit,
+            observedAt = SourceTimestamp,
+            receivedAt = ReceivedAt,
+            timestampBasis = "gateway_receipt",
+            ageMs = age,
+            staleAfterMs = StaleAfterSeconds * 1000,
+        };
     }
-    if (index + 1 >= arguments.Length
-        || !int.TryParse(arguments[index + 1], out int count)
-        || count < 1)
-    {
-        throw new ArgumentException("--samples must be followed by a positive integer.");
-    }
-    return count;
 }
