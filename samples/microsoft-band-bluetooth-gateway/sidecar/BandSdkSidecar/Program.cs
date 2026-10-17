@@ -224,8 +224,16 @@ try
 {
     await StartSensorAsync("accelerometer", accelerometer, startedSensors, sensorStatus);
     await StartSensorAsync("gyroscope", gyroscope, startedSensors, sensorStatus);
-    await StartSensorAsync("heartRate", heartRate, startedSensors, sensorStatus);
-    await StartSensorAsync("rrInterval", rrInterval, startedSensors, sensorStatus);
+    if (IsEnabled("BAND_ALLOW_HEART_RATE"))
+    {
+        await StartSensorAsync("heartRate", heartRate, startedSensors, sensorStatus);
+        await StartSensorAsync("rrInterval", rrInterval, startedSensors, sensorStatus);
+    }
+    else
+    {
+        sensorStatus["heartRate"] = "consent_required";
+        sensorStatus["rrInterval"] = "consent_required";
+    }
     await StartSensorAsync("skinTemperature", skinTemperature, startedSensors, sensorStatus);
     await StartSensorAsync("pedometer", pedometer, startedSensors, sensorStatus);
     await StartSensorAsync("calories", calories, startedSensors, sensorStatus);
@@ -332,6 +340,15 @@ static double CalculateRmssd(IEnumerable<double> intervals)
     }
 
     return Math.Sqrt(squaredDifferenceSum / (samples.Length - 1));
+}
+
+static bool IsEnabled(string name)
+{
+    string? value = Environment.GetEnvironmentVariable(name);
+    return value is not null
+        && (value.Equals("1", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("true", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("yes", StringComparison.OrdinalIgnoreCase));
 }
 
 static int ParseSampleCount(string[] arguments)

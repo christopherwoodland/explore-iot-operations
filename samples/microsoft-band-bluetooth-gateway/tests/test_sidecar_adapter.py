@@ -41,3 +41,15 @@ def test_sidecar_adapter_surfaces_process_failure(tmp_path: Path) -> None:
     ):
         with pytest.raises(RuntimeError, match="sensor timeout"):
             SidecarBandAdapter("band-01", str(sidecar)).read()
+
+
+def test_sidecar_adapter_surfaces_timeout(tmp_path: Path) -> None:
+    sidecar = tmp_path / "BandSdkSidecar.exe"
+    sidecar.touch()
+
+    with patch(
+        "band_gateway.sidecar_adapter.subprocess.run",
+        side_effect=subprocess.TimeoutExpired(["BandSdkSidecar.exe"], 30),
+    ):
+        with pytest.raises(RuntimeError, match="timed out after 30 seconds"):
+            SidecarBandAdapter("band-01", str(sidecar)).read()

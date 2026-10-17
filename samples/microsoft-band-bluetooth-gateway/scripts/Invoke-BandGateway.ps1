@@ -2,7 +2,10 @@
 param(
     [string] $Namespace = 'azure-iot-operations',
     [int] $LocalPort = 18883,
-    [switch] $ReadOnly
+    [switch] $ReadOnly,
+    [switch] $Continuous,
+    [double] $IntervalSeconds = 5,
+    [int] $MaxConsecutiveFailures = 0
 )
 
 $ErrorActionPreference = 'Stop'
@@ -52,6 +55,12 @@ try {
         $env:PYTHONPATH = Join-Path $sampleRoot 'src'
         if ($ReadOnly) {
             python -m band_gateway.main --read-only
+        }
+        elseif ($Continuous) {
+            python -m band_gateway.main `
+                --continuous `
+                --interval-seconds $IntervalSeconds `
+                --max-consecutive-failures $MaxConsecutiveFailures
         }
         else {
             python -m band_gateway.main

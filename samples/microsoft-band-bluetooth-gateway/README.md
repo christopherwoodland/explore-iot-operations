@@ -34,6 +34,11 @@ Band v1 has no SpO2 sensor and does not expose sleep state or respiratory rate
 as live sensor readings. HRV is calculated as RMSSD from collected RR
 intervals; it is not a native Band measurement.
 
+The default configuration leaves heart-rate and RR-interval subscriptions
+disabled. Other sensors are still attempted independently, and every sensor
+reports a status such as `started`, `not_supported`, `unavailable`, or
+`consent_required`.
+
 ## Probe the Band connection
 
 The Windows-native probe looks for the foreground RFCOMM service used by the
@@ -166,6 +171,18 @@ Publish one Band reading through a temporary localhost tunnel:
 ```powershell
 .\scripts\Invoke-BandGateway.ps1
 ```
+
+Run the data pipeline continuously. Stop it with `Ctrl+C`:
+
+```powershell
+.\scripts\Invoke-BandGateway.ps1 -Continuous -IntervalSeconds 5
+```
+
+Each cycle starts the sidecar, reads the full available sensor payload, and
+publishes it with QoS 1. If Bluetooth or the sidecar fails, the gateway logs
+the failure and retries. A new sidecar process on the next cycle also
+re-establishes the Band connection. Add
+`-MaxConsecutiveFailures 5` when a bounded failure policy is preferred.
 
 Register the Windows gateway connection and physical Band in Azure Device
 Registry:

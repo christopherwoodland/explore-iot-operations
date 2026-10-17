@@ -30,13 +30,18 @@ class SidecarBandAdapter:
                 "Run scripts\\Install-BandSdkSidecar.ps1 first."
             )
 
-        process = subprocess.run(
-            [str(self._sidecar_path), "--samples", "1"],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=self._timeout_seconds,
-        )
+        try:
+            process = subprocess.run(
+                [str(self._sidecar_path), "--samples", "1"],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=self._timeout_seconds,
+            )
+        except subprocess.TimeoutExpired as error:
+            raise RuntimeError(
+                f"Band sidecar timed out after {self._timeout_seconds} seconds."
+            ) from error
         if process.returncode != 0:
             details = process.stderr.strip() or process.stdout.strip()
             raise RuntimeError(
