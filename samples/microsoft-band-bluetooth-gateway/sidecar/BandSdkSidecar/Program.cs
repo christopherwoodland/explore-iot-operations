@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text.Json;
 using Microsoft.Band;
 using Microsoft.Band.Sensors;
+using Microsoft.Band.Windows;
 
 int sampleCount = int.Parse(GetArgument("--samples", "1"), CultureInfo.InvariantCulture);
 double interval = double.Parse(GetArgument("--interval-seconds", "5"), CultureInfo.InvariantCulture);
@@ -15,20 +16,25 @@ if (args.Contains("--list-devices"))
 {
     foreach (IBandInfo band in await BandClientManager.Instance.GetBandsAsync())
     {
-        Console.WriteLine(JsonSerializer.Serialize(new { type = "device", name = band.Name }));
+        Console.WriteLine(JsonSerializer.Serialize(new
+        {
+            type = "device", name = band.Name, selector = GetSelector(band),
+        }));
     }
     return 0;
 }
 
 string? selectedName = Environment.GetEnvironmentVariable("BAND_DEVICE_NAME");
+string? selectedId = Environment.GetEnvironmentVariable("BAND_DEVICE_SELECTOR");
 IBandInfo[] bands = await BandClientManager.Instance.GetBandsAsync();
 IBandInfo[] candidates = bands.Where(b =>
-    string.IsNullOrWhiteSpace(selectedName) || b.Name == selectedName).ToArray();
+    (string.IsNullOrWhiteSpace(selectedName) || b.Name == selectedName)
+    && (string.IsNullOrWhiteSpace(selectedId) || GetSelector(b) == selectedId)).ToArray();
 if (candidates.Length != 1)
 {
     Console.Error.WriteLine(
         $"Expected exactly one matching Band, found {candidates.Length}. "
-        + "Use --list-devices and set BAND_DEVICE_NAME to an exact, unique name.");
+        + "Use --list-devices and set BAND_DEVICE_SELECTOR to an exact device ID.");
     return 2;
 }
 
@@ -43,6 +49,7 @@ Console.WriteLine(JsonSerializer.Serialize(new
 {
     type = "device",
     name = candidates[0].Name,
+    selector = GetSelector(candidates[0]),
     firmwareVersion = await client.GetFirmwareVersionAsync(),
     hardwareVersion = await client.GetHardwareVersionAsync(),
 }));
@@ -72,6 +79,12 @@ try
     {
         // The SDK reports RR intervals in seconds; publish milliseconds.
         double milliseconds = r.Interval * 1000;
+        SensorState previous = sensors["rrInterval"];
+        if (previous.ReceivedAt is not null
+            && Stopwatch.GetElapsedTime(previous.Ticks).TotalSeconds > previous.StaleAfterSeconds)
+        {
+            rrIntervals.Clear();
+        }
         rrIntervals.Enqueue(milliseconds);
         while (rrIntervals.Count > 256)
         {
@@ -143,6 +156,7 @@ try
                     unit = "ms", method = "RMSSD", sampleCount = samples.Length,
                     receivedAt = rr.ReceivedAt, timestampBasis = "gateway_receipt",
                     ageMs = Stopwatch.GetElapsedTime(rr.Ticks).TotalMilliseconds,
+                    staleAfterMs = rr.StaleAfterSeconds * 1000,
                 };
             }
         }
@@ -150,6 +164,7 @@ try
         {
             type = "telemetry", schemaVersion = 2,
             timestamp = DateTimeOffset.UtcNow, bandName = candidates[0].Name,
+            deviceSelector = GetSelector(candidates[0]),
             sensors = snapshot,
             unsupported = new
             {
@@ -234,6 +249,11 @@ string GetArgument(string name, string fallback)
     if (index + 1 >= args.Length) throw new ArgumentException($"Missing value for {name}.");
     return args[index + 1];
 }
+
+static string GetSelector(IBandInfo band) =>
+    band is BluetoothDeviceInfo bluetooth
+        ? bluetooth.Peer.Id
+        : throw new NotSupportedException("Only Windows Bluetooth Bands are supported.");
 
 internal sealed class SensorState(string? unit, double staleAfterSeconds)
 {

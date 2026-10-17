@@ -20,6 +20,7 @@ $installerSelection = $edgeAst.Find({
     $node -is [Management.Automation.Language.IfStatementAst] -and
         $node.Clauses[0].Item1.Extent.Text.StartsWith('[Uri]::TryCreate')
 }, $true)
+function kubectl { throw 'Live Kubernetes calls are forbidden in unit tests.' }
 
 Describe 'Setup script syntax' {
     It 'parses the coordinator and initializer without errors' {
@@ -55,11 +56,11 @@ Describe 'AKS Edge installer source handling' {
         $uri = $null
         $workDirectory = $TestDrive
         Mock Invoke-WebRequest {}
-        Mock Resolve-Path { throw 'Resolve-Path must not receive an HTTPS URL' }
+        Mock Resolve-Path { throw 'Resolve-Path must not receive an HTTPS URL' } -ParameterFilter { $LiteralPath -like 'https:*' }
         . ([scriptblock]::Create($installerSelection.Extent.Text))
         $installer | Should Be (Join-Path $TestDrive 'AksEdge.msi')
-        Assert-MockCalled Invoke-WebRequest -Times 1 -Exactly
-        Assert-MockCalled Resolve-Path -Times 0 -Exactly
+        Assert-MockCalled Invoke-WebRequest -Times 1 -Exactly -Scope It
+        Assert-MockCalled Resolve-Path -Times 0 -Exactly -Scope It
     }
     It 'resolves local installer files without downloading them' {
         $source = Join-Path $TestDrive 'local installer.msi'
@@ -68,7 +69,7 @@ Describe 'AKS Edge installer source handling' {
         Mock Invoke-WebRequest { throw 'Local installer must not be downloaded' }
         . ([scriptblock]::Create($installerSelection.Extent.Text))
         $installer | Should Be $source
-        Assert-MockCalled Invoke-WebRequest -Times 0 -Exactly
+        Assert-MockCalled Invoke-WebRequest -Times 0 -Exactly -Scope It
     }
 }
 

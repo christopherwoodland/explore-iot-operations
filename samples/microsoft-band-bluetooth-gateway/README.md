@@ -36,7 +36,7 @@ intervals; it is not a native Band measurement.
 
 The default configuration leaves heart-rate and RR-interval subscriptions
 disabled. Other sensors are still attempted independently, and every sensor
-reports a status such as `started`, `not_supported`, `unavailable`, or
+reports a status such as `fresh`, `stale`, `awaiting_reading`, `not_supported`, `unavailable`, or
 `consent_required`.
 
 ## Probe the Band connection
@@ -103,6 +103,7 @@ samples/microsoft-band-bluetooth-gateway/
 │       ├── main.py
 │       ├── monitor.py
 │       ├── models.py
+│       ├── outbox.py
 │       └── sidecar_adapter.py
 └── tests/
     ├── test_models.py
@@ -131,8 +132,24 @@ $env:PYTHONPATH = "src"
 python -m band_gateway.main --read-only
 ```
 
-This reads one accelerometer sample through the external sidecar and prints
+This reads one multi-sensor snapshot through the external sidecar and prints
 normalized JSON without connecting to MQTT.
+
+### Selecting the physical device
+
+List the paired candidates using the separately built sidecar:
+
+```powershell
+& .\sidecar\BandSdkSidecar\bin\Release\net8.0-windows10.0.19041.0\BandSdkSidecar.exe --list-devices
+```
+
+Copy the exact `selector` into `BAND_DEVICE_SELECTOR` in your local `.env`.
+`BAND_DEVICE_ID` is the logical telemetry identity; it does not select hardware.
+`BAND_DEVICE_NAME` is an optional exact-name filter, but Windows may expose
+multiple Bands under the generic name `Cargo Service 3`. The adapter refuses
+ambiguous selection instead of connecting to the first candidate. With one
+paired candidate, selectors may be left unset for backwards-compatible setup.
+Device selectors are host-specific: configure them again after moving hosts.
 
 ## Publish one reading
 
@@ -179,11 +196,29 @@ Run the data pipeline continuously. Stop it with `Ctrl+C`:
 .\scripts\Invoke-BandGateway.ps1 -Continuous -IntervalSeconds 5
 ```
 
-Each cycle starts the sidecar, reads the full available sensor payload, and
-publishes it with QoS 1. If Bluetooth or the sidecar fails, the gateway logs
-the failure and retries. A new sidecar process on the next cycle also
-re-establishes the Band connection. Add
-`-MaxConsecutiveFailures 5` when a bounded failure policy is preferred.
+One sidecar maintains the Bluetooth connection and subscriptions across
+snapshots. Sensor events update the latest values continuously; snapshots are
+emitted at `-IntervalSeconds` (not a raw high-frequency motion stream).
+On a sidecar failure or a motion-stream silence longer than 20 seconds, the
+gateway starts a new connection with exponential backoff capped at 30 seconds.
+Each new connection starts with empty sensor state. Add
+`-MaxConsecutiveFailures 5` for a bounded failure policy. By default collection
+and delivery retry indefinitely. Use `-MaxMessages 10` for a finite smoke test.
+
+Collection and MQTT delivery run independently. Every accepted snapshot is
+committed to an SQLite WAL outbox **before** network delivery. Broker outages
+do not stop sensor collection. FIFO replay preserves the original timestamps,
+freshness metadata, and `messageId`; it never re-labels historical data as live.
+Records are deleted only after a QoS 1 PUBACK and a successful local archive
+write. A crash in that interval can cause duplicates: deduplicate by
+`messageId` downstream. This is at-least-once, not exactly-once delivery.
+
+The default outbox is `data/outbox.sqlite3`, limited to 100,000 pending snapshots.
+Change `BAND_OUTBOX_PATH` and `BAND_OUTBOX_MAX_RECORDS` if needed. A full outbox or
+storage failure stops collection explicitly instead of dropping old records.
+The acknowledged-message JSONL archive is not size-limited; apply your site's
+retention policy. Both stores can contain personal sensor data; restrict access
+and protect the host disk. Do not put personal names into MQTT topics.
 
 The gateway writes rotating logs to `logs/band-gateway.log` and appends each
 successfully published reading to `data/telemetry.jsonl`. Both paths are
@@ -192,9 +227,19 @@ ignored by Git and can be changed with `BAND_LOG_PATH` and
 destination for development and can be ingested later into Azure Data Explorer,
 a lakehouse, or another historical store.
 
-Each reading is rejected if its timestamp is older than
-`BAND_STALE_AFTER_SECONDS` (30 seconds by default), preventing stale Bluetooth
-data from being published as current telemetry.
+At collection, each payload is rejected if its timestamp is older than
+`BAND_STALE_AFTER_SECONDS` (30 seconds by default). Each sensor also has its own
+age and threshold: motion 5 seconds; heart rate/RR 15 seconds; temperature,
+contact, GSR, ambient light and barometer 60 seconds; cumulative counters,
+UV and altimeter 120 seconds. These are conservative sample policies, not
+manufacturer guarantees. A stale sensor has `value: null`, never its old value.
+The gateway also rechecks sensor age before persisting a snapshot.
+
+`observedAt` preserves the SDK timestamp, which can depend on the Band's clock.
+`receivedAt` records host receipt time. `ageMs` uses monotonic host time and
+`timestampBasis: gateway_receipt` explicitly identifies the freshness basis.
+This detects missing events, not whether a functioning sensor is accurate.
+Heart-rate `quality` must be checked before treating a BPM value as acquired.
 
 For automatic restart at Windows logon, register a Scheduled Task from an
 elevated PowerShell prompt:
@@ -204,8 +249,15 @@ elevated PowerShell prompt:
 Start-ScheduledTask -TaskName 'Microsoft Band IoT Gateway'
 ```
 
-The task starts the existing continuous launcher, which owns the localhost
-MQTT tunnel and retries failed MQTT and Band sidecar cycles. Remove it with:
+The task starts the continuous launcher, which supervises and restarts its
+localhost MQTT tunnel while collection continues into the outbox. Tunnel
+errors are written to `logs/tunnel-error.log`. The local Arc proxy is a separate
+prerequisite in Arc-proxy environments; the launcher does not authenticate to
+Azure or manage that proxy. This cloud-backed development tunnel is **not**
+an offline LAN broker endpoint. An offline-first deployment must provision a
+locally reachable, TLS-protected broker listener with local authentication.
+The task runs in the Windows user environment and does not install a Windows
+service. Remove it with:
 
 ```powershell
 Unregister-ScheduledTask -TaskName 'Microsoft Band IoT Gateway' -Confirm:$false
@@ -228,6 +280,11 @@ The MQTT connector subscribes to
 `wearables/microsoft-band-v1-01/telemetry` and republishes the Band dataset to
 `azure-iot-operations/data/wearables/microsoft-band-v1-01/telemetry`.
 
+The combined dataset is named `telemetry`. Re-running the registration script
+replaces the legacy `accelerometer` dataset with `telemetry`, preserves unrelated
+datasets and keeps both MQTT topic paths unchanged. This is a payload schema
+upgrade: consumers expecting the old flat fields must migrate to schema 2.
+
 For production, create a separate `NodePort` or `LoadBalancer` listener with a
 certificate valid for its external hostname and use managed secret delivery.
 Do not use `MQTT_TLS_INSECURE=true` outside this localhost tunnel.
@@ -245,27 +302,22 @@ Telemetry is published as JSON, for example:
 
 ```json
 {
+  "schemaVersion": 2,
   "deviceId": "microsoft-band-v1-01",
+  "messageId": "f5edbba7-71bf-4a67-b04b-ec3fb80f96ba",
   "timestamp": "2026-10-17T17:00:00+00:00",
-  "heartRateBpm": 72,
-  "heartRateVariability": {
-    "rmssdMs": 42.1,
-    "sampleCount": 12
-  },
-  "skinTemperatureCelsius": 31.2,
-  "steps": {
-    "total": 488770,
-    "today": 3421
-  },
-  "accelerometer": {
-    "x": 0.03,
-    "y": 0.98,
-    "z": 0.12
-  },
-  "sensorStatus": {
-    "accelerometer": "started",
-    "heartRate": "started",
-    "rrInterval": "not_supported"
+  "sensors": {
+    "accelerometer": {
+      "status": "fresh",
+      "value": {"x": 0.03, "y": 0.98, "z": 0.12},
+      "unit": "g",
+      "observedAt": "2026-10-17T17:00:00+00:00",
+      "receivedAt": "2026-10-17T17:00:00+00:00",
+      "timestampBasis": "gateway_receipt",
+      "ageMs": 12,
+      "staleAfterMs": 5000
+    },
+    "heartRate": {"status": "consent_required", "value": null}
   },
   "unsupported": {
     "spo2": "not_available_on_microsoft_band_v1",
@@ -275,9 +327,31 @@ Telemetry is published as JSON, for example:
 }
 ```
 
-Register the MQTT asset manually in Azure IoT Operations after telemetry is
-visible. MQTT assets are not automatically discovered by the IoT Operations
-Discovery experience.
+The sidecar emits UTF-8 JSON lines (`device` metadata followed by `telemetry`
+records); SDK diagnostics are not telemetry. `schemaVersion: 2` requires a
+timezone-aware payload timestamp and a `sensors` object. The gateway adds
+`deviceId` and `messageId` before queuing. Distance is normalized from SDK
+centimeters to meters and RR intervals from seconds to milliseconds. Derived
+RMSSD uses up to 256 recent intervals, resets after an RR gap, and is not a
+clinical measurement.
+
+## Connector and local-first management boundary
+
+The current integration uses the built-in MQTT Akri connector, not a custom
+connector deployed into Kubernetes. The versioned JSON-lines adapter boundary
+keeps Windows Bluetooth ownership separate from broker ingestion. A future
+custom Akri connector can reuse this contract without embedding Windows-only
+Bluetooth code in a Linux pod. Discovery, configuration reconciliation, and
+management actions still need explicit implementation; a custom connector
+does not deploy or administer the Windows gateway by itself.
+
+The planned local management application is a separate deliverable: local
+inventory, device groups, person assignments with consent/access controls,
+health and historical telemetry, plus eventual Azure synchronization. During
+outages a locally enrolled device must show `pending Azure registration`,
+not pretend that Azure Device Registry has been updated. Do not edit
+cloud-managed Kubernetes resources as an offline Device Registry workaround.
+The cloud-hosted operations portal is not an offline local console.
 
 ## Data limitations and next steps
 
@@ -302,8 +376,9 @@ explicit consent is configured:
 BAND_ALLOW_HEART_RATE=true
 ```
 
-After enabling it, wear the Band and inspect the archived payload and MQTT
-topic for `heartRateBpm`, `heartRateQuality`, and `rrIntervalMs`. A future
+After enabling it, wear the Band and inspect `sensors.heartRate.value.bpm`,
+`sensors.heartRate.value.quality`, and `sensors.rrInterval` in archived and MQTT
+payloads. A future
 analytics stage could derive activity epochs or respiratory estimates from
 accelerometer and heart-rate data, but those should be labeled as derived
 values and validated separately.
@@ -312,5 +387,6 @@ values and validated separately.
 
 - [Azure IoT Operations developer guide](https://learn.microsoft.com/azure/iot-operations/develop-edge-apps/overview-iot-operations-development)
 - [Azure IoT Operations custom Akri connectors](https://learn.microsoft.com/azure/iot-operations/develop-edge-apps/overview-akri-connectors)
+- [Device and asset lifecycle connectivity requirements](https://learn.microsoft.com/azure/iot-operations/troubleshoot/troubleshoot#troubleshoot-device-and-asset-lifecycle-operations)
 - [Microsoft Band SDK package](https://www.nuget.org/packages/Microsoft.Band/)
 - [MicrosoftBandDev Band SDK](https://github.com/MicrosoftBandDev/band-sdk)

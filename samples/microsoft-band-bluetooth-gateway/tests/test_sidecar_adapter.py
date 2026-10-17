@@ -1,5 +1,5 @@
-from pathlib import Path
-import subprocess
+import json
+import sys
 from unittest.mock import patch
 
 import pytest
@@ -7,49 +7,45 @@ import pytest
 from band_gateway.sidecar_adapter import SidecarBandAdapter
 
 
-def test_sidecar_adapter_normalizes_accelerometer_payload(
-    tmp_path: Path,
-) -> None:
-    sidecar = tmp_path / "BandSdkSidecar.exe"
-    sidecar.touch()
-    output = (
-        '[Info] SDK diagnostic\n'
-        '{"type":"device","name":"Cargo Service 3"}\n'
-        '{"type":"telemetry","timestamp":"2026-10-17T13:31:01-04:00",'
-        '"accelerometer":{"x":-0.98,"y":0.07,"z":0.18}}\n'
-    )
-
-    with patch(
-        "band_gateway.sidecar_adapter.subprocess.run",
-        return_value=subprocess.CompletedProcess([], 0, output, ""),
-    ):
-        reading = SidecarBandAdapter("band-01", str(sidecar)).read()
-
-    assert reading.device_id == "band-01"
-    assert reading.values == {
-        "accelerometer": {"x": -0.98, "y": 0.07, "z": 0.18}
-    }
+def payload():
+    return json.dumps({
+        "type": "telemetry", "schemaVersion": 2,
+        "timestamp": "2026-10-17T22:00:00+00:00",
+        "sensors": {"accelerometer": {"status": "fresh", "value": {"x": 1}}},
+    })
 
 
-def test_sidecar_adapter_surfaces_process_failure(tmp_path: Path) -> None:
-    sidecar = tmp_path / "BandSdkSidecar.exe"
-    sidecar.touch()
+def test_stream_reads_multiple_lines_from_one_process_and_cleans_up():
+    output = payload()
+    code = f"import time; print({output!r}, flush=True); print({output!r}, flush=True); time.sleep(60)"
+    adapter = SidecarBandAdapter("band-01", sys.executable)
+    with patch.object(adapter, "_command", return_value=[sys.executable, "-u", "-c", code]):
+        stream = adapter.stream(1)
+        try:
+            assert next(stream).device_id == "band-01"
+            assert next(stream).values["schemaVersion"] == 2
+        finally:
+            stream.close()
 
-    with patch(
-        "band_gateway.sidecar_adapter.subprocess.run",
-        return_value=subprocess.CompletedProcess([], 4, "", "sensor timeout"),
-    ):
-        with pytest.raises(RuntimeError, match="sensor timeout"):
-            SidecarBandAdapter("band-01", str(sidecar)).read()
+
+def test_sidecar_surfaces_process_failure():
+    adapter = SidecarBandAdapter("band-01", sys.executable)
+    with patch.object(adapter, "_command", return_value=[sys.executable, "-c", "raise SystemExit(4)"]):
+        with pytest.raises(RuntimeError, match="code 4"):
+            next(adapter.stream(1))
 
 
-def test_sidecar_adapter_surfaces_timeout(tmp_path: Path) -> None:
-    sidecar = tmp_path / "BandSdkSidecar.exe"
-    sidecar.touch()
+def test_schema_version_rejected():
+    adapter = SidecarBandAdapter("band-01", sys.executable)
+    with pytest.raises(RuntimeError, match="schema"):
+        adapter._parse('{"type":"telemetry","schemaVersion":1}')
 
-    with patch(
-        "band_gateway.sidecar_adapter.subprocess.run",
-        side_effect=subprocess.TimeoutExpired(["BandSdkSidecar.exe"], 30),
-    ):
-        with pytest.raises(RuntimeError, match="timed out after 30 seconds"):
-            SidecarBandAdapter("band-01", str(sidecar)).read()
+
+def test_sdk_diagnostic_lines_ignored():
+    adapter = SidecarBandAdapter("band-01", sys.executable)
+    assert adapter._parse("[Info] SDK message") is None
+
+
+def test_missing_sidecar_reported(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        SidecarBandAdapter("band", str(tmp_path / "missing.exe")).read()

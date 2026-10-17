@@ -177,11 +177,15 @@ if ($LASTEXITCODE -ne 0) {
     throw 'Failed to read the Microsoft Band asset.'
 }
 
+$otherDatasets = @(
+    $assetResource.properties.datasets |
+        Where-Object { $_.name -notin @('accelerometer', 'telemetry') }
+)
 $datasetPatchBody = @{
     properties = @{
-        datasets = @(
+        datasets = $otherDatasets + @(
             @{
-                name = 'accelerometer'
+                name = 'telemetry'
                 dataSource = $sourceTopic
                 dataPoints = @()
                 destinations = @(
@@ -215,7 +219,7 @@ try {
         --only-show-errors `
         --output none
     if ($LASTEXITCODE -ne 0) {
-        throw 'Failed to configure the Band accelerometer dataset.'
+        throw 'Failed to configure the Band telemetry dataset.'
     }
 }
 finally {

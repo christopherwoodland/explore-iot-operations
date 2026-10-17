@@ -6,25 +6,21 @@ import argparse
 from datetime import datetime, timezone
 import json
 import logging
+import math
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 import time
-from typing import Protocol
+from threading import Event, Thread
+from queue import Queue
 
 import paho.mqtt.client as mqtt
 
 from .config import GatewayConfig
 from .models import BandTelemetry
 from .sidecar_adapter import SidecarBandAdapter
+from .outbox import Outbox
 
 LOGGER = logging.getLogger("band_gateway")
-
-
-class BandAdapter(Protocol):
-    """Bluetooth adapter boundary for a Microsoft Band implementation."""
-
-    def read(self) -> BandTelemetry:
-        """Return one reading, or raise an explicit connection error."""
 
 
 def create_mqtt_client(
@@ -52,10 +48,9 @@ def create_mqtt_client(
     return client
 
 
-def publish_once(
-    config: GatewayConfig, adapter: BandAdapter, client: mqtt.Client
-) -> None:
-    reading = adapter.read()
+def validate_reading(config: GatewayConfig, reading: BandTelemetry) -> None:
+    if reading.timestamp.tzinfo is None:
+        raise RuntimeError("Band payload timestamp must include a timezone.")
     age_seconds = (
         datetime.now(timezone.utc) - reading.timestamp.astimezone(timezone.utc)
     ).total_seconds()
@@ -68,19 +63,46 @@ def publish_once(
         raise RuntimeError(
             f"Band reading timestamp is {abs(age_seconds):.1f} seconds in the future."
         )
-    result = client.publish(
-        f"{config.topic_prefix}/telemetry",
-        payload=reading.to_json(),
-        qos=1,
-    )
-    result.wait_for_publish()
+    if reading.values.get("schemaVersion") != 2:
+        raise RuntimeError("Expected telemetry schemaVersion 2.")
+    sensors = reading.values.get("sensors")
+    if not isinstance(sensors, dict) or not sensors:
+        raise RuntimeError("Expected nonempty sensors object.")
+    for name, sensor in sensors.items():
+        if not isinstance(sensor, dict):
+            raise RuntimeError(f"Invalid sensor envelope: {name}")
+        if sensor.get("status") == "fresh":
+            age = sensor.get("ageMs")
+            limit = sensor.get("staleAfterMs")
+            if not isinstance(age, (float, int)) or not isinstance(limit, (float, int)):
+                raise RuntimeError(f"Missing sensor freshness metadata: {name}")
+            if not math.isfinite(age) or not math.isfinite(limit) or age < 0 or limit <= 0:
+                raise RuntimeError(f"Invalid sensor freshness metadata: {name}")
+            if age + max(age_seconds, 0) * 1000 > limit:
+                sensor["status"] = "stale"
+                sensor["value"] = None
+        elif sensor.get("value") is not None:
+            raise RuntimeError(f"Non-fresh sensor contains a value: {name}")
+
+
+def deliver_pending(config: GatewayConfig, outbox: Outbox, client: mqtt.Client) -> bool:
+    record = outbox.peek()
+    if record is None:
+        return False
+    sequence, topic, payload = record
+    result = client.publish(topic, payload=payload, qos=1)
     if result.rc != mqtt.MQTT_ERR_SUCCESS:
         raise RuntimeError(f"MQTT publish failed with result code {result.rc}")
+    result.wait_for_publish(timeout=config.mqtt_publish_timeout_seconds)
+    if not result.is_published():
+        raise TimeoutError("MQTT PUBACK timeout; message remains in the outbox.")
     archive_path = Path(config.telemetry_archive_path)
     archive_path.parent.mkdir(parents=True, exist_ok=True)
     with archive_path.open("a", encoding="utf-8") as archive:
-        archive.write(reading.to_json())
-        archive.write("\n")
+        archive.write(payload + "\n")
+    outbox.acknowledge(sequence)
+    LOGGER.info("Broker acknowledged queued telemetry %s", sequence)
+    return True
 
 
 def configure_logging(log_path: str) -> None:
@@ -104,70 +126,95 @@ def configure_logging(log_path: str) -> None:
     )
 
 
-def publish_continuously(
-    config: GatewayConfig,
-    adapter: BandAdapter,
-    client: mqtt.Client,
-    interval_seconds: float,
+def publisher(
+    config: GatewayConfig, stop: Event, errors: Queue[Exception],
     max_consecutive_failures: int,
 ) -> None:
-    consecutive_failures = 0
-    while True:
-        try:
-            if not client.is_connected():
-                LOGGER.info("Reconnecting to MQTT broker")
-                client.reconnect()
-            publish_once(config, adapter, client)
-            consecutive_failures = 0
-            LOGGER.info("Published Band telemetry")
-        except (OSError, RuntimeError, TimeoutError) as error:
-            consecutive_failures += 1
-            LOGGER.error(
-                "Telemetry cycle failed (%s/%s): %s",
-                consecutive_failures,
-                max_consecutive_failures or "unlimited",
-                error,
-            )
-            if (
-                max_consecutive_failures > 0
-                and consecutive_failures >= max_consecutive_failures
-            ):
-                raise RuntimeError(
-                    "Stopping after the configured consecutive failure limit."
-                ) from error
-        time.sleep(interval_seconds)
+    try:
+        _publish_loop(config, stop, max_consecutive_failures)
+    except Exception as error:
+        LOGGER.exception("Publisher stopped; queued data is retained")
+        errors.put(error)
+        stop.set()
 
 
-def connect_with_retry(
-    config: GatewayConfig,
-    client: mqtt.Client,
-    max_consecutive_failures: int,
+def _publish_loop(
+    config: GatewayConfig, stop: Event, max_consecutive_failures: int,
 ) -> None:
-    consecutive_failures = 0
-    while True:
+    outbox = Outbox(config.outbox_path, config.outbox_max_records)
+    client = create_mqtt_client(config)
+
+    def on_connect(connected_client, userdata, flags, reason_code, properties):
+        if reason_code.is_failure:
+            LOGGER.error("Broker rejected connection: %s", reason_code)
+        else:
+            LOGGER.info("MQTT connected; draining durable outbox")
+
+    client.on_connect = on_connect
+    client.enable_logger(LOGGER)
+    client.reconnect_delay_set(min_delay=1, max_delay=30)
+    client.max_queued_messages_set(1)
+    client.connect_async(config.mqtt_host, config.mqtt_port)
+    client.loop_start()
+    failures = 0
+    try:
+        while not stop.is_set():
+            try:
+                if not client.is_connected():
+                    raise ConnectionError("MQTT unavailable; collection continues into the outbox")
+                if not deliver_pending(config, outbox, client):
+                    stop.wait(0.2)
+                failures = 0
+            except (OSError, RuntimeError, TimeoutError) as error:
+                failures += 1
+                LOGGER.error("Delivery attempt %s failed: %s", failures, error)
+                if max_consecutive_failures and failures >= max_consecutive_failures:
+                    raise RuntimeError("MQTT consecutive failure limit reached.") from error
+                stop.wait(min(30, 2 ** min(failures, 5)))
+    finally:
+        client.disconnect()
+        client.loop_stop()
+        outbox.close()
+
+
+def collect(
+    config: GatewayConfig, adapter: SidecarBandAdapter, outbox: Outbox,
+    interval: float, continuous: bool, max_messages: int, failure_limit: int,
+    stop: Event,
+) -> None:
+    failures = 0
+    count = 0
+    while not stop.is_set():
+        stream = adapter.stream(interval, continuous)
         try:
-            client.connect(config.mqtt_host, config.mqtt_port)
-            return
-        except (OSError, RuntimeError) as error:
-            consecutive_failures += 1
-            LOGGER.error(
-                "MQTT connection failed (%s/%s): %s",
-                consecutive_failures,
-                max_consecutive_failures or "unlimited",
-                error,
-            )
-            if (
-                max_consecutive_failures > 0
-                and consecutive_failures >= max_consecutive_failures
-            ):
-                raise RuntimeError(
-                    "Stopping after the configured MQTT connection failure limit."
-                ) from error
-            time.sleep(5)
+            while not stop.is_set():
+                try:
+                    reading = next(stream)
+                    validate_reading(config, reading)
+                except (OSError, RuntimeError) as error:
+                    failures += 1
+                    LOGGER.error("Band connection failed (%s): %s", failures, error)
+                    if not continuous or (failure_limit and failures >= failure_limit):
+                        raise
+                    stop.wait(min(30, 2 ** min(failures, 5)))
+                    break
+                # Storage failures are fatal: never silently drop a collected reading.
+                message_id = outbox.enqueue(f"{config.topic_prefix}/telemetry", reading)
+                LOGGER.info("Queued telemetry %s", message_id)
+                failures = 0
+                count += 1
+                if not continuous or (max_messages and count >= max_messages):
+                    return
+        finally:
+            stream.close()
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--max-messages", type=int, default=0,
+        help="Stop continuous collection after N snapshots; zero means unlimited.",
+    )
     parser.add_argument(
         "--read-only",
         action="store_true",
@@ -191,10 +238,12 @@ def main() -> None:
         help="Stop after this many failures; zero means retry indefinitely.",
     )
     args = parser.parse_args()
-    if args.interval_seconds <= 0:
+    if not math.isfinite(args.interval_seconds) or args.interval_seconds <= 0:
         parser.error("--interval-seconds must be greater than zero")
     if args.max_consecutive_failures < 0:
         parser.error("--max-consecutive-failures cannot be negative")
+    if args.max_messages < 0:
+        parser.error("--max-messages cannot be negative")
 
     config = GatewayConfig.from_environment()
     configure_logging(config.log_path)
@@ -206,33 +255,33 @@ def main() -> None:
         print(adapter.read().to_json())
         return
 
-    client = create_mqtt_client(config)
-    LOGGER.info("Connecting to MQTT broker %s:%s", config.mqtt_host, config.mqtt_port)
-    if args.continuous:
-        connect_with_retry(
-            client=client,
-            config=config,
-            max_consecutive_failures=args.max_consecutive_failures,
-        )
-    else:
-        client.connect(config.mqtt_host, config.mqtt_port)
-    client.loop_start()
+    outbox = Outbox(config.outbox_path, config.outbox_max_records)
+    stop = Event()
+    errors: Queue[Exception] = Queue()
+    worker = Thread(
+        target=publisher,
+        args=(config, stop, errors, args.max_consecutive_failures),
+        daemon=True,
+    )
+    worker.start()
     try:
-        if args.continuous:
-            publish_continuously(
-                config,
-                adapter,
-                client,
-                args.interval_seconds,
-                args.max_consecutive_failures,
-            )
-        else:
-            publish_once(config, adapter, client)
+        collect(
+            config, adapter, outbox, args.interval_seconds,
+            args.continuous, args.max_messages, args.max_consecutive_failures, stop,
+        )
+        if not errors.empty():
+            raise RuntimeError("Publisher failed.") from errors.get()
+        deadline = time.monotonic() + config.mqtt_publish_timeout_seconds * 2
+        while outbox.peek() is not None and time.monotonic() < deadline and not stop.wait(0.2):
+            pass
+        if outbox.peek() is not None:
+            raise RuntimeError("Delivery incomplete; messages retained in durable outbox.")
     except KeyboardInterrupt:
         LOGGER.info("Stopping Band gateway")
     finally:
-        client.loop_stop()
-        client.disconnect()
+        stop.set()
+        worker.join(timeout=config.mqtt_publish_timeout_seconds + 5)
+        outbox.close()
 
 
 if __name__ == "__main__":

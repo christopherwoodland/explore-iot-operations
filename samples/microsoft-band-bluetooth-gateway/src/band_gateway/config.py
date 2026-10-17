@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 import os
+import math
 
 from dotenv import load_dotenv
 
@@ -36,6 +37,17 @@ class GatewayConfig:
     log_path: str
     telemetry_archive_path: str
     stale_after_seconds: float
+    outbox_path: str = "data/outbox.sqlite3"
+    outbox_max_records: int = 100000
+    mqtt_publish_timeout_seconds: float = 10
+
+    def __post_init__(self) -> None:
+        for name in ("stale_after_seconds", "mqtt_publish_timeout_seconds"):
+            value = getattr(self, name)
+            if not math.isfinite(value) or value <= 0:
+                raise ValueError(f"{name} must be finite and positive")
+        if self.outbox_max_records < 1:
+            raise ValueError("outbox_max_records must be positive")
 
     @classmethod
     def from_environment(cls) -> "GatewayConfig":
@@ -60,4 +72,7 @@ class GatewayConfig:
             stale_after_seconds=float(
                 os.getenv("BAND_STALE_AFTER_SECONDS", "30")
             ),
+            outbox_path=os.getenv("BAND_OUTBOX_PATH", "data/outbox.sqlite3"),
+            outbox_max_records=int(os.getenv("BAND_OUTBOX_MAX_RECORDS", "100000")),
+            mqtt_publish_timeout_seconds=float(os.getenv("MQTT_PUBLISH_TIMEOUT_SECONDS", "10")),
         )
