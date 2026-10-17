@@ -156,7 +156,6 @@ function Write-ErrorLog {
         Write-Host ""
         Write-Host "Fatal error encountered. Exiting." -ForegroundColor Red
         Write-Host "Check log file for details: $script:LogFile" -ForegroundColor Yellow
-        Stop-Transcript
         exit 1
     }
 }
@@ -1447,7 +1446,10 @@ function Deploy-IoTOperations {
     } else {
         # Initialize cluster
         Write-Log "Initializing cluster for Azure IoT Operations..."
-        az iot ops init --cluster $script:ClusterName --resource-group $script:ResourceGroup
+        az iot ops init --cluster $script:ClusterName --resource-group $script:ResourceGroup --no-progress
+        if ($LASTEXITCODE -ne 0) {
+            Write-ErrorLog "IoT Operations initialization failed - cannot continue" -Fatal
+        }
         
         # Get schema registry ID
         $schemaRegistryId = az resource show `
@@ -1485,8 +1487,7 @@ function Deploy-IoTOperations {
         az @createArgs 2>&1
         
         if ($LASTEXITCODE -ne 0) {
-            Write-ErrorLog "Azure IoT Operations deployment failed"
-            return
+            Write-ErrorLog "Azure IoT Operations deployment failed" -Fatal
         }
         
         Write-Success "Azure IoT Operations deployed: $instanceName"

@@ -1,0 +1,340 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20261017120255
+Username: NORTHAMERICA\cwoodland
+RunAs User: NORTHAMERICA\cwoodland
+Configuration Name: 
+Machine: CWMSFT (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand UwBlAHQALQBMAG8AYwBhAHQAaQBvAG4AIAAtAEwAaQB0AGUAcgBhAGwAUABhAHQAaAAgACcAQwA6AFwAVQBzAGUAcgBzAFwAYwB3AG8AbwBkAGwAYQBuAGQAXABkAGUAdgBcAGUAeABwAGwAbwByAGUALQBpAG8AdAAtAG8AcABlAHIAYQB0AGkAbwBuAHMAJwA7ACAAJgAgACcAQwA6AFwAVQBzAGUAcgBzAFwAYwB3AG8AbwBkAGwAYQBuAGQAXABkAGUAdgBcAGUAeABwAGwAbwByAGUALQBpAG8AdAAtAG8AcABlAHIAYQB0AGkAbwBuAHMAXABBAGsAcwBFAGQAZwBlAFEAdQBpAGMAawBTAHQAYQByAHQARgBvAHIAQQBpAG8ALgBwAHMAMQAnACAALQBhAGkAZABlAFUAcwBlAHIAQwBvAG4AZgBpAGcAZgBpAGwAZQAgACcAQwA6AFwAVQBzAGUAcgBzAFwAYwB3AG8AbwBkAGwAYQBuAGQAXABkAGUAdgBcAGUAeABwAGwAbwByAGUALQBpAG8AdAAtAG8AcABlAHIAYQB0AGkAbwBuAHMAXABhAGkAbwAtAGEAaQBkAGUALQB1AHMAZQByAGMAbwBuAGYAaQBnAC4AagBzAG8AbgAnACAALQBhAGsAcwBlAGQAZwBlAEMAbwBuAGYAaQBnAEYAaQBsAGUAIAAnAEMAOgBcAFUAcwBlAHIAcwBcAGMAdwBvAG8AZABsAGEAbgBkAFwAZABlAHYAXABlAHgAcABsAG8AcgBlAC0AaQBvAHQALQBvAHAAZQByAGEAdABpAG8AbgBzAFwAYQBpAG8ALQBhAGsAcwBlAGQAZwBlAC0AYwBvAG4AZgBpAGcALgBqAHMAbwBuACcA
+Process ID: 12176
+PSVersion: 5.1.26100.9711
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9711
+BuildVersion: 10.0.26100.9711
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is C:\Users\cwoodland\dev\explore-iot-operations\aksedgedlog-261017-1202.txt
+Step 1 : Azure/AKS-Edge repo setup
+Step 2 : Ensure Deployment prerequisites
+Loading AksEdgeDeploy module from C:\Users\cwoodland\dev\explore-iot-operations\AKS-Edge-main\tools\modules..
+HostOS	: Microsoft Windows 11 Enterprise(4) 
+Version	: 10.0.26300.9711 
+Lang	: en-US 
+Name	: CWMSFT
+Total CPUs		: 14
+Free RAM / Total RAM	: 42 GB / 64 GB
+Free Disk / Total Disk	: 367 GB / 952 GB
+Network Adapters	:
+Wi-Fi(Disconnected),
+Ethernet 2(Up),
+
+VPN Profile		: Disconnected Disconnected
+AKS Edge Essentials is not installed.
+AksEdgeShell  version  	: 1.0.240904.1500
+AksEdgeDeploy version  	: 1.0.250318.900
+Hyper-V is enabled
+Step 3: Download, install and deploy AKS Edge Essentials
+AksEdgeDeploy version: 1.0.250318.900
+HostOS	: Microsoft Windows 11 Enterprise(4) 
+Version	: 10.0.26300.9711 
+Lang	: en-US 
+Name	: CWMSFT
+Total CPUs		: 14
+Free RAM / Total RAM	: 42 GB / 64 GB
+Free Disk / Total Disk	: 367 GB / 952 GB
+Network Adapters	:
+Wi-Fi(Disconnected),
+Ethernet 2(Up),
+
+VPN Profile		: Disconnected Disconnected
+AKS Edge Essentials is not installed.
+
+--- Verifying AksEdge Install Configuration...
+* AKS Edge Essentials - K3s to be installed
+*** No errors found in the Install Configuration.
+Installing AKS Edge Essentials - K3s from https://download.microsoft.com/download/828d40d9-2ca9-442e-b492-0fbcdbeb7ad6/AksEdge-K3s-1.33.5-1.12.269.0.msi
+AKS Edge Essentials - K3s 1.12.269.0 is installed.
+Loading AksEdge module..
+AksEdge version        	: 1.12.269.0
+AKS Edge Essentials - K3s successfully installed
+AksEdge version        	: 1.12.269.0
+Running Install-AksEdgeHostFeatures
+ - Checking host for required features
+ - Checking the status of 'Microsoft-Hyper-V'
+ - Checking the status of 'Microsoft-Hyper-V-Management-PowerShell'
+ - Checking the status of 'Microsoft-Hyper-V-Hypervisor'
+ - Checking the status of 'OpenSSH.Client*'
+ - Checking power management settings of the Host
+ - Checking HNS version of the Host
+ - Checking OpenSSH version of the Host
+ - Checking Nested Virtualization of the Host
+SingleMachine cluster uses internal switch. Nothing to test.
+
+--- Verifying AksEdge VM Deployment Configuration...
+--- Verifying EULA...
+* EULA accepted.
+* Optional telemetry accepted.
+*** No errors found in the Deployment Configuration.
+Starting AksEdge VM deployment...
+ - Checking host for required features
+ - Checking the status of 'Microsoft-Hyper-V'
+ - Checking the status of 'Microsoft-Hyper-V-Management-PowerShell'
+ - Checking the status of 'Microsoft-Hyper-V-Hypervisor'
+ - Checking the status of 'OpenSSH.Client*'
+ - Checking power management settings of the Host
+ - Checking HNS version of the Host
+ - Checking OpenSSH version of the Host
+ - Checking Nested Virtualization of the Host
+
+[10/17/2026 12:04:38]
+All required host features are installed
+
+[10/17/2026 12:04:38]
+Validating AksEdge network parameters...
+ - Selecting private subnet in the '192.168' network segment...
+ - Identified candidate for private subnet: '192.168.0.0'. Validating subnet's gateway IP '192.168.0.1' is free...
+ - private subnet '192.168.0.0' is available
+
+[10/17/2026 12:04:43]
+*** 0 errors found in the deployment configuration, excluding the Azure Arc Parameters section
+
+[10/17/2026 12:04:43]
+Verifying Host Requirements for Linux node(s)
+ - Verifying host requirements for selected configuration (52.5 GB disk size, 10740 MB memory, 4 CPUs)
+
+[10/17/2026 12:04:43]
+Verifying Host OS can support requested configuration
+
+[10/17/2026 12:04:44]
+Verifying required storage, RAM and number of cores are available
+ - Drive 'C:' has 365 GB free
+ - A minimum of 52 GB disk space is required on drive 'C:'
+ - Host has 42396 MB free memory
+ - A minimum of 10740 MB memory is required
+ - Host has 14 CPU cores
+ - A minimum of 4 CPU cores is required
+ - Verifying certificate requirements for AKS-EE
+ - Verifying Moc Dependencies for AKS-EE
+
+[10/17/2026 12:04:48]
+AksEdge - deploying a new Linux single machine k3s cluster
+Security Warning: Script Execution Risk
+Invoke-WebRequest parses the content of the web page. Script code in the web page might be run when the page is parsed.
+      RECOMMENDED ACTION:
+      Use the -UseBasicParsing switch to avoid script code execution.
+
+      Do you want to continue?
+&Yes  Yes to &All  &No  No to A&ll  &Suspend
+A
+
+[10/17/2026 12:05:17]
+Creating single machine cluster hcs network
+ - Selecting private subnet in the '192.168' network segment...
+ - Identified candidate for private subnet: '192.168.0.0'. Validating subnet's gateway IP '192.168.0.1' is free...
+ - private subnet '192.168.0.0' is available
+ - Successfully selected private subnet '192.168.0.0'.
+ - AksEdge - private network carved: 
+
+Name  : ip4PrefixLength
+Value : 24
+
+Name  : LinuxVmIp4Address
+Value : 192.168.0.2
+
+Name  : ServiceIPRangeStart
+Value : 192.168.0.4
+
+Name  : ip4GatewayAddress
+Value : 192.168.0.1
+
+Name  : ip4Subnet
+Value : 192.168.0.0
+
+Name  : WindowsVmIp4Address
+Value : 192.168.0.3
+
+Name  : ServiceIPRangeEnd
+Value : 192.168.0.13
+
+[10/17/2026 12:05:21]
+Deploying AKS Edge Essentials - K3s
+
+[10/17/2026 12:05:21]
+Step 1: Preparing host for AKS Edge Essentials - K3s
+
+[10/17/2026 12:05:21]
+Enabling Microsoft Update. This will allow AKS Edge Essentials - K3s to receive updates.
+ - Microsoft Update is enabled.
+
+[10/17/2026 12:05:22]
+Checking for virtual switch with name 'aksedgesw-int'
+ - The virtual switch 'aksedgesw-int' of type 'Internal' is present
+
+[10/17/2026 12:05:23]
+Associating wssdagent service with nodectl
+
+[10/17/2026 12:05:28]
+Creating vnet (name: aksedgesw-int)
+ - Determining DNS servers capable of resolving the endpoint 'microsoft.com' from the list of potential servers (192.168.1.1)...
+ - Success, one or more eligible DNS servers found (192.168.1.1)...
+
+[10/17/2026 12:05:31]
+Deploying AKS Edge Essentials - K3s
+
+[10/17/2026 12:05:31]
+Step 1: Skipped host preparation
+
+[10/17/2026 12:05:31]
+Step 2: Verifying AKS Edge Essentials - K3s installation
+
+[10/17/2026 12:05:31]
+Verifying installation
+ - Verifying whether Hyper-V is enabled and functional
+ - Hyper-V core services are active
+ - Verifying expected Windows host binaries
+ - Verifying expected Linux VM image
+ - Testing for ssh key
+ - Generating SSH key...
+ - Testing for wssdagent service
+ - Testing if wssdagent is running
+ - Testing if container resource is provisioned
+ - Testing if vnet resource 'aksedgesw-int' is provisioned
+
+[10/17/2026 12:05:35]
+Step 3: Runtime configuration complete. Creating virtual machine
+
+[10/17/2026 12:05:35]
+Extracting Linux VHD
+
+[10/17/2026 12:05:45]
+Setting dynamically expanding virtual hard disk maximum size to 62.4 GB
+ - Creating storage vhd (file: AzureIoTEdgeForLinux-v1-ledge)
+ - Creating vnic (name: cwmsft-ledgeInterface)
+ - Instantiating virtual machine (name: cwmsft-ledge)
+wssdagent.exe : 2026/10/17 12:05:58 [WMI] QueryInstances [SELECT * FROM Win32_PnPEntity WHERE  Name = 'Nvidia 
+L4_PCI_P2P_0 - Dismounted' ]=> [0]
+At C:\Program Files\WindowsPowerShell\Modules\AksEdge\1.12.269.0\AksEdge-Core.psm1:3767 char:39
++ ... rrOut = $($wssdversionInfo = & {& $nodeAgentBinaryPath version}) 2>&1
++                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (2026/10/17 12:0...ounted' ]=> [0]:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+2026/10/17 12:05:58 [WMI] QueryInstances [SELECT * FROM Win32_PnPEntity WHERE  Name = 'Nvidia L40_PCI_P2P_0 - 
+Dismounted' ]=> [0]
+2026/10/17 12:05:59 [WMI] QueryInstances [SELECT * FROM Win32_PnPEntity WHERE  Name = 'Nvidia L40S_PCI_P2P_0 - 
+Dismounted' ]=> [0]
+2026/10/17 12:05:59 [WMI] QueryInstances [SELECT * FROM Win32_PnPEntity WHERE  Name = 'Nvidia T4_base - Dismounted' ]=> 
+[0]
+2026/10/17 12:06:00 [WMI] QueryInstances [SELECT * FROM Win32_PnPEntity WHERE  Name = 'Nvidia A2_base - Dismounted' ]=> 
+[0]
+2026/10/17 12:06:00 [WMI] QueryInstances [SELECT * FROM Win32_PnPEntity WHERE  Name = 'Nvidia A16_base - Dismounted' 
+]=> [0]
+2026/10/17 12:06:00 [WMI] QueryInstances [SELECT * FROM Win32_PnPEntity WHERE  Name = 'Nvidia A30_base - Dismounted' 
+]=> [0]
+2026/10/17 12:06:01 [WMI] QueryInstances [SELECT * FROM Win32_PnPEntity WHERE  Name = 'Nvidia A100_base - Dismounted' 
+]=> [0]
+ - Virtual machine successfuly instantiated
+
+[10/17/2026 12:06:01]
+Virtual machine created successfully.
+
+[10/17/2026 12:06:01]
+Successfully created virtual machine
+
+[10/17/2026 12:06:01]
+Virtual machine hostname: cwmsft-ledge
+
+[10/17/2026 12:06:01]
+Testing SSH connection...
+
+[10/17/2026 12:06:04]
+...successfully connected to the Linux VM
+
+[10/17/2026 12:06:05]
+Querying IP and MAC addresses from virtual machine (cwmsft-ledge)
+ - Virtual machine MAC: 00:15:5d:b5:98:d6
+ - Virtual machine IP : 192.168.0.2 retrieved directly from virtual machine
+ - Please check your DNS configuration to ensure Internet connectivity. Refer to https://aka.ms/aks-edge/dns for more details.
+
+[10/17/2026 12:06:06]
+Deployment successful
+
+[10/17/2026 12:06:06]
+Setting DNS servers for Linux node 192.168.1.1.
+
+[10/17/2026 12:06:08]
+Running disk speed test...
+
+[10/17/2026 12:06:08]
+Copying diagnostics yaml input to Linux VM...
+
+[10/17/2026 12:06:09]
+Running StoragePerformance check...
+
+[10/17/2026 12:07:21]
+Storage performance check succeeded. Disk meets acceptable criteria for etcd performance.
+
+[10/17/2026 12:07:22]
+Initializing kubernetes runtime in Linux node.
+ - Waiting for Kubernetes node (cwmsft-ledge) to reach condition Ready, time remaining = 300 seconds
+ - Kubernetes node (cwmsft-ledge) reached condition Ready
+wssdagent.exe : 2026/10/17 12:08:26 [WMI] QueryInstances [SELECT * FROM Win32_PnPEntity WHERE  Name = 'Nvidia 
+L4_PCI_P2P_0 - Dismounted' ]=> [0]
+At C:\Program Files\WindowsPowerShell\Modules\AksEdge\1.12.269.0\AksEdge-Core.psm1:3767 char:39
++ ... rrOut = $($wssdversionInfo = & {& $nodeAgentBinaryPath version}) 2>&1
++                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (2026/10/17 12:0...ounted' ]=> [0]:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+2026/10/17 12:08:26 [WMI] QueryInstances [SELECT * FROM Win32_PnPEntity WHERE  Name = 'Nvidia L40_PCI_P2P_0 - 
+Dismounted' ]=> [0]
+2026/10/17 12:08:27 [WMI] QueryInstances [SELECT * FROM Win32_PnPEntity WHERE  Name = 'Nvidia L40S_PCI_P2P_0 - 
+Dismounted' ]=> [0]
+2026/10/17 12:08:27 [WMI] QueryInstances [SELECT * FROM Win32_PnPEntity WHERE  Name = 'Nvidia T4_base - Dismounted' ]=> 
+[0]
+2026/10/17 12:08:28 [WMI] QueryInstances [SELECT * FROM Win32_PnPEntity WHERE  Name = 'Nvidia A2_base - Dismounted' ]=> 
+[0]
+2026/10/17 12:08:28 [WMI] QueryInstances [SELECT * FROM Win32_PnPEntity WHERE  Name = 'Nvidia A16_base - Dismounted' 
+]=> [0]
+2026/10/17 12:08:29 [WMI] QueryInstances [SELECT * FROM Win32_PnPEntity WHERE  Name = 'Nvidia A30_base - Dismounted' 
+]=> [0]
+2026/10/17 12:08:29 [WMI] QueryInstances [SELECT * FROM Win32_PnPEntity WHERE  Name = 'Nvidia A100_base - Dismounted' 
+]=> [0]
+
+[10/17/2026 12:08:29]
+AksEdge - copying Kubeconfig into the host.
+
+[10/17/2026 12:08:31]
+AksEdge - new deployment successfully created.
+* AksEdge VM deployment successfull.
+Deployment Successful.
+Step 4: Connect the cluster to Azure
+Registering the required resource providers for AIO
+az : WARNING: Registering is still on-going. You can monitor using 'az provider show -n Microsoft.ExtendedLocation'
+At C:\Users\cwoodland\dev\explore-iot-operations\AksEdgeQuickStartForAio.ps1:439 char:34
++         $errOut = $($retVal = & {az provider register -n $rp}) 2>&1
++                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (WARNING: Regist...tendedLocation':String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+az : WARNING: Registering is still on-going. You can monitor using 'az provider show -n Microsoft.Kubernetes'
+At C:\Users\cwoodland\dev\explore-iot-operations\AksEdgeQuickStartForAio.ps1:439 char:34
++         $errOut = $($retVal = & {az provider register -n $rp}) 2>&1
++                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (WARNING: Regist...oft.Kubernetes':String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+Arc enable the kubernetes cluster nhds
+New-ConnectedCluster
+Connect cmd args - -g iot -n nhds -l eastus --subscription 6bf68138-6ea4-4272-a3db-78e737e132a6 --tags System.Object[] --disable-auto-upgrade --distribution aks_edge_k3s --enable-oidc-issuer --enable-workload-identity
+az : WARNING: This operation might take a while...
+At C:\Users\cwoodland\dev\explore-iot-operations\AksEdgeQuickStartForAio.ps1:183 char:30
++ ... rrOut = $($retVal = & {az connectedk8s connect $k8sConnectArgs}) 2>&1
++                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (WARNING: This o...take a while...:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+WARNING: Downloading helm client for first time. This can take few minutes...
+WARNING: --- Pre-onboarding Diagnostic Check Results ---
+WARNING: Precheck summary: jobExecutionStatus=Completed; dnsCheck=Passed; outboundConnectivityCheck=Passed; 
+entraCheck=NotApplicable; crdCheck=Passed
+WARNING: --- End of Diagnostic Check Results ---

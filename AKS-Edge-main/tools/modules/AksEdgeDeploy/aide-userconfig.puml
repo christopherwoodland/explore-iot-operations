@@ -1,0 +1,65 @@
+@startjson AksEdgeDeploy
+<style>
+jsonDiagram {
+    node {
+        FontSize 12
+        RoundCorner 10
+        LineThickness 0.5
+        separator {
+            LineThickness 0.25
+        }
+    }
+    arrow {
+        LineThickness 0.5
+        LineStyle 2,6
+    }
+    highlight {
+        BackgroundColor black
+        FontColor White
+    }
+}
+</style>
+#highlight "SchemaVersion"
+{
+    "SchemaVersion":"1.3",
+    "Version":"1.0",
+    "AksEdgeProduct" : [
+                "AKS Edge Essentials - K8s",
+                "AKS Edge Essentials - K3s"
+            ],
+    "AksEdgeProductUrl" : "URL",
+    "Azure":{
+        "ClusterName":"String",
+        "SubscriptionName":"String",
+        "SubscriptionId": "GUID",
+        "TenantId":"GUID",
+        "ResourceGroupName": "String",
+        "ServicePrincipalName" : "String",
+        "Location" : "String",
+        "CustomLocationOID":"GUID",
+        "Auth": {
+            "ServicePrincipalId" : "GUID",
+            "Password" : "String"
+        },
+        "//EnableWorkloadIdentity//" : "Boolean",
+        "//EnableKeyManagement//" : "Boolean",
+        "//GatewayResourceId//": "String",
+        "ConnectedMachineName": "String"
+    }
+    ,
+    "InstallOptions":{
+        "InstallPath":"String",
+        "VhdxPath":"String"
+    }
+    ,
+    "VSwitch": {
+        "Name": "String",
+        "AdapterName": "String"
+    }
+    ,
+    "AksEdgeConfigFile":"String",
+    "AksEdgeConfig":{
+        "ref" :"aksedge-config.json"
+    }
+}
+@endjson

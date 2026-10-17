@@ -1,0 +1,27 @@
+# Azure IoT Operations Deployment Summary
+# Generated: 2026-10-17T13:21:18.6750974-04:00
+
+deployment_timestamp: "2026-10-17T13:21:18.6750974-04:00"
+subscription_id: "6bf68138-6ea4-4272-a3db-78e737e132a6"
+subscription_name: "MCAPS-Hybrid-REQ-118055-2025-cwoodland"
+resource_group: "iot"
+location: "eastus"
+cluster_name: "nhds"
+iot_operations_instance: "nhds-aio"
+storage_account: "nhdsstorage"
+schema_registry: "nhds-schema-registry"
+key_vault: "kv-nhds-6bf681"
+namespace: "nhds-ns"
+dry_run: false
+
+deployed_resources:
+  - "keyVault"
+  - "deviceRegistryNamespace"
+  - "schemaRegistry"
+  - "managedIdentity"
+  - "containerRegistry"
+  - "IoTOperationsInstance:nhds-aio"
+  - "RegistryEndpoint:nhdsacr6bf681-endpoint"
+
+errors:
+  []

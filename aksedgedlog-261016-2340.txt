@@ -1,0 +1,100 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20261016234012
+Username: NORTHAMERICA\cwoodland
+RunAs User: NORTHAMERICA\cwoodland
+Configuration Name: 
+Machine: CWMSFT (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe
+Process ID: 39740
+PSVersion: 5.1.26100.9711
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9711
+BuildVersion: 10.0.26100.9711
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is C:\Users\cwoodland\dev\explore-iot-operations\aksedgedlog-261016-2340.txt
+Step 1 : Azure/AKS-Edge repo setup
+Step 2 : Ensure Deployment prerequisites
+Loading AksEdgeDeploy module from C:\Users\cwoodland\dev\explore-iot-operations\AKS-Edge-main\tools\modules..
+HostOS	: Microsoft Windows 11 Enterprise(4) 
+Version	: 10.0.26300.9711 
+Lang	: en-US 
+Name	: CWMSFT
+Total CPUs		: 14
+Free RAM / Total RAM	: 17 GB / 64 GB
+Free Disk / Total Disk	: 355 GB / 952 GB
+Network Adapters	:
+Wi-Fi(Disconnected),
+Ethernet 2(Up),
+
+VPN Profile		: Disconnected Disconnected
+AKS Edge Essentials is not installed.
+AksEdgeShell  version  	: 1.0.240904.1500
+AksEdgeDeploy version  	: 1.0.250318.900
+Hyper-V is enabled
+Step 3: Download, install and deploy AKS Edge Essentials
+AksEdgeDeploy version: 1.0.250318.900
+HostOS	: Microsoft Windows 11 Enterprise(4) 
+Version	: 10.0.26300.9711 
+Lang	: en-US 
+Name	: CWMSFT
+Total CPUs		: 14
+Free RAM / Total RAM	: 17 GB / 64 GB
+Free Disk / Total Disk	: 355 GB / 952 GB
+Network Adapters	:
+Wi-Fi(Disconnected),
+Ethernet 2(Up),
+
+VPN Profile		: Disconnected Disconnected
+AKS Edge Essentials is not installed.
+
+--- Verifying AksEdge Install Configuration...
+* AKS Edge Essentials - K3s to be installed
+*** No errors found in the Install Configuration.
+Resolve-Path : Cannot find drive. A drive with the name 'https' does not exist.
+At C:\Users\cwoodland\dev\explore-iot-operations\AKS-Edge-main\tools\modules\AksEdgeDeploy\AksEdgeDeploy.psm1:738 
+char:23
++         $urlParent = (Resolve-Path -Path $url).Path | Split-Path -Par ...
++                       ~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (https:String) [Resolve-Path], DriveNotFoundException
+    + FullyQualifiedErrorId : DriveNotFound,Microsoft.PowerShell.Commands.ResolvePathCommand
+Resolve-Path : Cannot find drive. A drive with the name 'https' does not exist.
+At C:\Users\cwoodland\dev\explore-iot-operations\AKS-Edge-main\tools\modules\AksEdgeDeploy\AksEdgeDeploy.psm1:738
+char:23
++         $urlParent = (Resolve-Path -Path $url).Path | Split-Path -Par ...
++                       ~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (https:String) [Resolve-Path], DriveNotFoundException
+    + FullyQualifiedErrorId : DriveNotFound,Microsoft.PowerShell.Commands.ResolvePathCommand
+
+Split-Path : Cannot bind argument to parameter 'Path' because it is null.
+At C:\Users\cwoodland\dev\explore-iot-operations\AKS-Edge-main\tools\modules\AksEdgeDeploy\AksEdgeDeploy.psm1:738 
+char:55
++ ...      $urlParent = (Resolve-Path -Path $url).Path | Split-Path -Parent
++                                                        ~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Split-Path], ParameterBindingValidationException
+    + FullyQualifiedErrorId : 
+ParameterArgumentValidationErrorNullNotAllowed,Microsoft.PowerShell.Commands.SplitPathCommand
+Split-Path : Cannot bind argument to parameter 'Path' because it is null.
+At C:\Users\cwoodland\dev\explore-iot-operations\AKS-Edge-main\tools\modules\AksEdgeDeploy\AksEdgeDeploy.psm1:738
+char:55
++ ...      $urlParent = (Resolve-Path -Path $url).Path | Split-Path -Parent
++                                                        ~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Split-Path], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationErrorNullNotAllowed,Microsoft.PowerShell.Commands.SplitPathCo
+   mmand
+
+Installing AKS Edge Essentials - K3s from https://download.microsoft.com/download/828d40d9-2ca9-442e-b492-0fbcdbeb7ad6/AksEdge-K3s-1.33.5-1.12.269.0.msi
+PS>TerminatingError(): "The pipeline has been stopped."
+>> TerminatingError(): "The pipeline has been stopped."
+>> TerminatingError(): "The pipeline has been stopped."
+>> TerminatingError(): "The pipeline has been stopped."
+>> TerminatingError(): "The pipeline has been stopped."
+Duration: 0 hrs 1 mins 41 seconds
+**********************
+Windows PowerShell transcript end
+End time: 20261016234153
+**********************

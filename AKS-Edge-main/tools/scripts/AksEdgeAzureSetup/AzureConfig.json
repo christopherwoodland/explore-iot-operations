@@ -1,0 +1,16 @@
+{
+    "Azure" : {
+        "SubscriptionName": "",
+        "SubscriptionId": "",
+        "TenantId":"",
+        "ResourceGroupName": "arciot-rg",
+        "ServicePrincipalName" : "arciot-sp",
+        "Location" : "EastUS",
+        "CustomLocationOID":"",
+        "Auth": {
+            "ServicePrincipalId" : "",
+            "Password" : ""
+        }
+    },
+    "AksEdgeConfigFile": ""
+}

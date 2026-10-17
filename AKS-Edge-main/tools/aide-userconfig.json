@@ -1,0 +1,30 @@
+{
+    "SchemaVersion":  "1.3",
+    "Version":  "1.0",
+    "AksEdgeProduct":  "AKS Edge Essentials - K3s",
+    "AksEdgeProductUrl":  "https://download.microsoft.com/download/828d40d9-2ca9-442e-b492-0fbcdbeb7ad6/AksEdge-K3s-1.33.5-1.12.269.0.msi",
+    "InstallOptions":  {
+                           "InstallPath":  "",
+                           "VhdxPath":  ""
+                       },
+    "VSwitch":  {
+                    "Name":  "",
+                    "AdapterName":  ""
+                },
+    "Azure":  {
+                  "SubscriptionName":  "",
+                  "SubscriptionId":  "6bf68138-6ea4-4272-a3db-78e737e132a6",
+                  "TenantId":  "16b3c013-d300-468d-ac64-7eda0820b6d3",
+                  "ResourceGroupName":  "iot",
+                  "ServicePrincipalName":  "",
+                  "Location":  "eastus",
+                  "CustomLocationOID":  "af89a3ae-8ffe-4ce7-89fb-a615f4083dc3",
+                  "EnableWorkloadIdentity":  true,
+                  "GatewayResourceId":  "",
+                  "Auth":  {
+                               "ServicePrincipalId":  "",
+                               "Password":  ""
+                           }
+              },
+    "AksEdgeConfigFile":  "aksedge-config.json"
+}

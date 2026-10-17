@@ -46,6 +46,9 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$false)]
+    [string]$ConfigFile,
+
+    [Parameter(Mandatory=$false)]
     [string]$ResourceGroup,
     
     [Parameter(Mandatory=$false)]
@@ -114,6 +117,10 @@ function Write-ErrorMsg {
 
 function Find-ConfigFile {
     param([string]$FileName)
+
+    if ($FileName -eq "aio_config.json" -and $ConfigFile) {
+        return (Resolve-Path -LiteralPath $ConfigFile -ErrorAction Stop).Path
+    }
     
     $repoRoot = Split-Path -Parent $script:ScriptDir
     $configDir = Join-Path $repoRoot "config"

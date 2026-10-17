@@ -323,6 +323,76 @@ If you are running both AKS Edge Essentials (edge) and the Azure management scri
 
 #### Workflow
 
+**Automated option — run the complete Windows setup**
+
+Open **PowerShell 7 as administrator**, change to `quickstart\external_configuration`,
+and run:
+
+```powershell
+.\Start-IoTOperationsSetup.ps1
+```
+
+The script prompts for the Azure subscription/tenant, resource group, region,
+cluster name, globally unique resource names, AKS Edge installer URL or local MSI,
+VM sizing, license acceptance, optional telemetry, and optional demo module.
+It shows the target and asks for confirmation before making changes. It saves
+settings in `quickstart\config\aio_config.json` and reuses them on later runs.
+Azure CLI, `kubectl`, and PowerShell 7 must already be installed; an interactive
+Azure user with permission to create resources and role assignments is required.
+The AKS Edge MSI must have a valid Microsoft signature.
+
+It runs these stages **sequentially**, stopping on failures:
+
+1. Sign in to Azure and install missing `connectedk8s`, `azure-iot-ops`, and `k8s-extension` extensions.
+2. Install AKS Edge and Windows prerequisites, create or reuse the local K3s cluster,
+   configure Arc/OIDC/custom locations, storage, and networking, then wait for node and Arc readiness.
+3. Run `grant_entra_id_roles.ps1`, create infrastructure with
+   `External-Configurator.ps1 -SkipIoTOps`, and rerun permissions for the new resources.
+4. Run `External-Configurator.ps1 -DemoMode`, finish permissions, and wait for
+   IoT Operations provisioning and pod readiness.
+5. Optionally build/push/deploy `edgemqttsim` or `demohistorian`, then wait for rollout.
+
+This is a **single-machine demo**, not a production deployment. It creates billable
+Azure resources and grants the roles implemented by the permissions script. The
+optional module uses ACR cloud builds, so Docker Desktop is not required.
+MQTT port forwarding listens on all host interfaces on TCP 1883; restrict access
+to trusted networks. Other required Linux firewall rules are persisted.
+
+If a reboot is required, the script stops with instructions; it never automatically
+reboots Windows. Restart, then run the same command again. Existing deployments are
+not deleted or recreated, and a healthy Arc connection is not reconnected.
+Existing VM sizing is preserved; size parameters apply to new VMs only.
+The existing configurator may upgrade an already deployed IoT Operations instance.
+
+```powershell
+# Read-only configuration and prerequisite check (no Azure or Windows changes)
+.\Start-IoTOperationsSetup.ps1 -CheckOnly -NonInteractive
+
+# Unattended run using saved settings, without a demo module
+.\Start-IoTOperationsSetup.ps1 -NonInteractive -ModuleName none
+
+# New deployment with explicit required settings
+.\Start-IoTOperationsSetup.ps1 -SubscriptionId "<subscription-guid>" `
+    -ResourceGroup "rg-my-iot" -ClusterName "my-edge" -Location "eastus" `
+    -AcceptEula -NonInteractive
+```
+
+Each child script has a 90-minute timeout; readiness checks have a 15-minute
+timeout. Override with `-StepTimeoutMinutes` and `-ReadinessTimeoutMinutes`.
+Temporary blank Arc connectivity status is retried, not treated as success.
+Output is collected in `quickstart\config\setup-runs\<timestamp>` alongside the
+existing scripts' transcripts. AKS Edge runs in Windows PowerShell 5.1; the
+remaining stages run in PowerShell 7. UTF-8 and noninteractive child processes
+avoid console-selection pauses and Unicode progress-rendering failures.
+
+`aio_config.json`, setup logs, and generated kubeconfigs are excluded from Git.
+Treat kubeconfigs as administrator credentials. Module deployment gets a separate
+temporary kubeconfig so stopping its Arc proxy does not break direct cluster access.
+Use `-ConfigPath` for an alternative configuration; protect and exclude that
+directory yourself if it is outside the default config directory.
+
+The following steps remain available if you prefer to run each stage manually.
+
 > **AKS Edge Essentials vs. AKS**: In this path, Kubernetes runs locally on your Windows machine via **AKS Edge Essentials (AKS-EE)** — a lightweight, Microsoft-supported K8s distribution embedded in Windows. This is different from the Ubuntu/K3s path (which uses K3s) and from cloud-hosted AKS. AKS-EE is still Arc-enabled and managed through Azure the same way, but the cluster itself lives on your local machine rather than on a separate edge device or in the cloud.
 
 **Step 1 — Set your Azure context (choose one option)**
@@ -416,7 +486,7 @@ After either option above, run:
 
 > **These modules are not part of IoT Operations itself.** They are demo applications that generate simulated data or mimic industrial processes so you can see IoT Operations working end-to-end without needing real hardware or live signals. They would not belong in a production system — replace them with your own data sources when you're ready.
 
-Once IoT Operations is running, you can push containerized applications to the edge cluster from your Windows machine. This step requires **Docker Desktop** running locally to build the image before pushing to ACR. 
+Once IoT Operations is running, you can push containerized applications to the edge cluster from your Windows machine. For an ACR hostname such as `myregistry.azurecr.io` in `azure.container_registry`, the script uses **ACR cloud builds**, with no local Docker requirement. Other registries require Docker Desktop running locally.
 
 Deploy the factory MQTT simulator (`edgemqttsim`) as a first module:
 

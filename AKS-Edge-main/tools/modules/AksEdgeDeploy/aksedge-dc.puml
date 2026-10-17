@@ -1,0 +1,171 @@
+@startjson AksEdgeSchema
+<style>
+jsonDiagram {
+    node {
+        FontSize 14
+        RoundCorner 10
+        LineThickness 0.5
+        separator {
+            LineThickness 0.25
+        }
+    }
+    arrow {
+        LineThickness 0.5
+        LineStyle 2,6
+    }
+    highlight {
+        BackgroundColor black
+        FontColor White
+    }
+}
+</style>
+#highlight "SchemaVersion"
+{
+    "SchemaVersion": "1.15",
+    "Version": "1.0",
+    "DeploymentType": [
+            "SingleMachineCluster",
+            "ScalableCluster",
+            "<color:gray>CapiCluster(Reserved)"
+    ],
+    "Init": {
+        "ServiceIPRangeStart": "ipv4",
+        "ServiceIPRangeSize": {
+            "type": "integer",
+            "minimum" : 1,
+            "maximum" : 127
+        },
+        "KmsPlugin": {
+            "Enable": false
+        }
+    },
+    "<color:gray>Join":"<color:gray>Reserved",
+    "Arc": {
+        "ClusterName": "string",
+        "Location": "string",
+        "ResourceGroupName": "string",
+        "SubscriptionId": "GUID",
+        "TenantId": "GUID",
+        "ClientId": "string",
+        "ClientSecret": "string",
+        "CustomLocationsOid": "string",
+        "EnableWorkloadIdentity": "boolean"
+    },
+    "User": {
+        "AcceptEula": true,
+        "AcceptOptionalTelemetry": true,
+        "<color:gray>VolumeLicense":{
+            "<color:gray>EnrollmentId":"<color:gray>string",
+            "<color:gray>PartNumber":"<color:gray>string"
+        },
+        "AcceptGpuWarning": false
+    },
+    "Network": {
+        "ControlPlaneEndpointIp": "ipv4",
+        "NetworkPlugin": [
+                "calico",
+                "flannel"
+        ],
+        "Ip4GatewayAddress": "ipv4",
+        "Ip4PrefixLength": {
+            "type": "integer",
+            "default": 24,
+            "minimum": 1,
+            "maximum": 31
+        },
+        "Ip4AddressPrefix":"string",
+        "DnsServers": [["ipv4"]],
+        "InternetDisabled": false,
+        "SkipAddressFreeCheck":false,
+        "SkipDnsCheck":false,
+        "Proxy": {
+            "Http":"string",
+            "Https":"string",
+            "No":"string"
+        }
+    },
+    "Machines":[{
+        "<color:gray>ArcHybridComputeMachineId":"<color:gray>Reserved",
+        "NetworkConnection":{
+            "AdapterName":"string",
+            "Mtu":"integer"
+        },
+        "LinuxNode":{
+            "CpuCount": {
+                "type": "integer",
+                "default": 4,
+                "minimum": 2
+            },
+            "MemoryInMB": {
+                "type": "integer",
+                "default": 4096,
+                "multipleOf": 2,
+                "minimum": 2048
+            },
+            "MemoryHugePages": {
+                "Size": {
+                    "type": "enum",
+                    "default": 2048,
+                    "values": [2048,1048576]
+                },
+                "count": {
+                    "type": "integer",
+                    "default": 0
+                }
+            },
+            "DataSizeInGB": {
+                "type": "integer",
+                "default": 10
+            },
+            "LogSizeInGB": {
+                "type": "integer",
+                "default": 1,
+                "minimum" : 1,
+                "maximum" : 10
+            },
+            "TimeoutSeconds": {
+                "type": "int",
+                "default": 300
+            },
+            "TpmPassthrough": false,
+            "SecondaryNetworks": [
+                {
+                    "VMSwitchName" : "string",
+                    "Ip4Address": "ipv4",
+                    "Ip4GatewayAddress": "ipv4",
+                    "Ip4PrefixLength": "integer"
+                }
+            ],
+            "GpuPassthrough": {
+                "Name": "string",
+                "Type": "string",
+                "Count": "integer"
+            },
+            "Ip4Address": "ipv4",
+            "MacAddress": "string",
+            "Mtu": "integer",
+            "ControlPlane" : false
+        },
+        "WindowsNode":{
+            "CpuCount": {
+                "type": "integer",
+                "default": 2,
+                "minimum": 2
+            },
+            "MemoryInMB": {
+                "type": "integer",
+                "default": 4096,
+                "multipleOf": 2,
+                "minimum": 2048
+            },
+            "TimeoutSeconds": {
+                "type": "int",
+                "default": 900
+            },
+            "Ip4Address": "ipv4",
+            "MacAddress": "string",
+            "Mtu": "integer"
+        }
+    }]
+}
+@endjson

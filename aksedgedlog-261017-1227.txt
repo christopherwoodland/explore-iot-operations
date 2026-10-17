@@ -1,0 +1,185 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20261017122711
+Username: NORTHAMERICA\cwoodland
+RunAs User: NORTHAMERICA\cwoodland
+Configuration Name: 
+Machine: CWMSFT (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand JABFAHIAcgBvAHIAQQBjAHQAaQBvAG4AUAByAGUAZgBlAHIAZQBuAGMAZQAgAD0AIAAnAFMAdABvAHAAJwAKAFMAZQB0AC0ATABvAGMAYQB0AGkAbwBuACAALQBMAGkAdABlAHIAYQBsAFAAYQB0AGgAIAAnAEMAOgBcAFUAcwBlAHIAcwBcAGMAdwBvAG8AZABsAGEAbgBkAFwAZABlAHYAXABlAHgAcABsAG8AcgBlAC0AaQBvAHQALQBvAHAAZQByAGEAdABpAG8AbgBzACcACgAkAG8AbABkACAAPQAgAEcAZQB0AC0AQwBpAG0ASQBuAHMAdABhAG4AYwBlACAAVwBpAG4AMwAyAF8AUAByAG8AYwBlAHMAcwAgAC0ARgBpAGwAdABlAHIAIAAnAFAAcgBvAGMAZQBzAHMASQBkACAAPQAgADEAMgAxADcANgAnAAoAaQBmACAAKAAkAG8AbABkACkAIAB7AAoAIAAgACAAIABpAGYAIAAoACQAbwBsAGQALgBOAGEAbQBlACAALQBuAGUAIAAnAHAAbwB3AGUAcgBzAGgAZQBsAGwALgBlAHgAZQAnACAALQBvAHIAIAAkAG8AbABkAC4AQwByAGUAYQB0AGkAbwBuAEQAYQB0AGUALgBUAG8AUwB0AHIAaQBuAGcAKAAnAHkAeQB5AHkATQBNAGQAZABIAEgAbQBtAHMAcwAnACkAIAAtAG4AZQAgACcAMgAwADIANgAxADAAMQA3ADEAMgAwADIANAA3ACcAKQAgAHsAIAB0AGgAcgBvAHcAIAAnAE8AbABkACAAcAByAG8AYwBlAHMAcwAgAGkAZABlAG4AdABpAHQAeQAgAGMAaABhAG4AZwBlAGQAOwAgAHIAZQBmAHUAcwBpAG4AZwAgAHQAbwAgAHMAdABvAHAAIABpAHQALgAnACAAfQAKACAAIAAgACAAJABjAGgAaQBsAGQAcgBlAG4AIAA9ACAAQAAoAEcAZQB0AC0AQwBpAG0ASQBuAHMAdABhAG4AYwBlACAAVwBpAG4AMwAyAF8AUAByAG8AYwBlAHMAcwAgAC0ARgBpAGwAdABlAHIAIAAnAFAAYQByAGUAbgB0AFAAcgBvAGMAZQBzAHMASQBkACAAPQAgADEAMgAxADcANgAnACAAfAAgAFcAaABlAHIAZQAtAE8AYgBqAGUAYwB0ACAAewAgACQAXwAuAE4AYQBtAGUAIAAtAG4AZQAgACcAYwBvAG4AaABvAHMAdAAuAGUAeABlACcAIAB9ACkACgAgACAAIAAgAGkAZgAgACgAJABjAGgAaQBsAGQAcgBlAG4ALgBDAG8AdQBuAHQAKQAgAHsAIAB0AGgAcgBvAHcAIAAnAFEAdQBpAGMAawAtAHMAdABhAHIAdAAgAGgAYQBzACAAYQBjAHQAaQB2AGUAIABjAGgAaQBsAGQAIABwAHIAbwBjAGUAcwBzAGUAcwA7ACAAcgBlAGYAdQBzAGkAbgBnACAAdABvACAAaQBuAHQAZQByAHIAdQBwAHQAIABpAHQALgAnACAAfQAKACAAIAAgACAAUwB0AG8AcAAtAFAAcgBvAGMAZQBzAHMAIAAtAEkAZAAgADEAMgAxADcANgAgAC0ARgBvAHIAYwBlACAALQBFAHIAcgBvAHIAQQBjAHQAaQBvAG4AIABTAHQAbwBwAAoAIAAgACAAIABXAGEAaQB0AC0AUAByAG8AYwBlAHMAcwAgAC0ASQBkACAAMQAyADEANwA2ACAALQBUAGkAbQBlAG8AdQB0ACAAMQA1ACAALQBFAHIAcgBvAHIAQQBjAHQAaQBvAG4AIABTAGkAbABlAG4AdABsAHkAQwBvAG4AdABpAG4AdQBlAAoAfQAKACQARQByAHIAbwByAEEAYwB0AGkAbwBuAFAAcgBlAGYAZQByAGUAbgBjAGUAIAA9ACAAJwBDAG8AbgB0AGkAbgB1AGUAJwAKACYAIAAnAC4AXABBAGsAcwBFAGQAZwBlAFEAdQBpAGMAawBTAHQAYQByAHQARgBvAHIAQQBpAG8ALgBwAHMAMQAnACAALQBhAGkAZABlAFUAcwBlAHIAQwBvAG4AZgBpAGcAZgBpAGwAZQAgACcALgBcAGEAaQBvAC0AYQBpAGQAZQAtAHUAcwBlAHIAYwBvAG4AZgBpAGcALgBqAHMAbwBuACcAIAAtAGEAawBzAGUAZABnAGUAQwBvAG4AZgBpAGcARgBpAGwAZQAgACcALgBcAGEAaQBvAC0AYQBrAHMAZQBkAGcAZQAtAGMAbwBuAGYAaQBnAC4AagBzAG8AbgAnAA==
+Process ID: 27752
+PSVersion: 5.1.26100.9711
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9711
+BuildVersion: 10.0.26100.9711
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is C:\Users\cwoodland\dev\explore-iot-operations\aksedgedlog-261017-1227.txt
+Step 1 : Azure/AKS-Edge repo setup
+Step 2 : Ensure Deployment prerequisites
+Loading AksEdgeDeploy module from C:\Users\cwoodland\dev\explore-iot-operations\AKS-Edge-main\tools\modules..
+HostOS	: Microsoft Windows 11 Enterprise(4) 
+Version	: 10.0.26300.9711 
+Lang	: en-US 
+Name	: CWMSFT
+Total CPUs		: 14
+Free RAM / Total RAM	: 33 GB / 64 GB
+Free Disk / Total Disk	: 358 GB / 952 GB
+Network Adapters	:
+Wi-Fi(Disconnected),
+Ethernet 2(Up),
+
+VPN Profile		: Disconnected Disconnected
+AKS Edge Essentials - K3s 1.12.269.0 is installed.
+Loading AksEdge module..
+AksEdge version        	: 1.12.269.0
+AksEdgeShell  version  	: 1.0.240904.1500
+AksEdgeDeploy version  	: 1.0.250318.900
+Hyper-V is enabled
+AksEdge Cluster is already deployed
+Step 3: Download, install and deploy AKS Edge Essentials
+AksEdgeDeploy version: 1.0.250318.900
+HostOS	: Microsoft Windows 11 Enterprise(4) 
+Version	: 10.0.26300.9711 
+Lang	: en-US 
+Name	: CWMSFT
+Total CPUs		: 14
+Free RAM / Total RAM	: 33 GB / 64 GB
+Free Disk / Total Disk	: 358 GB / 952 GB
+Network Adapters	:
+Wi-Fi(Disconnected),
+Ethernet 2(Up),
+
+VPN Profile		: Disconnected Disconnected
+AKS Edge Essentials - K3s 1.12.269.0 is installed.
+AksEdge version        	: 1.12.269.0
+Running Install-AksEdgeHostFeatures
+ - Checking host for required features
+ - Checking the status of 'Microsoft-Hyper-V'
+ - Checking the status of 'Microsoft-Hyper-V-Management-PowerShell'
+ - Checking the status of 'Microsoft-Hyper-V-Hypervisor'
+ - Checking the status of 'OpenSSH.Client*'
+ - Checking power management settings of the Host
+ - Checking HNS version of the Host
+ - Checking OpenSSH version of the Host
+ - Checking Nested Virtualization of the Host
+AksEdge VM is already deployed.
+Deployment Successful.
+Step 4: Connect the cluster to Azure
+Registering the required resource providers for AIO
+Arc enable the kubernetes cluster nhds
+New-ConnectedCluster
+Connect cmd args - -g iot -n nhds -l eastus --subscription 6bf68138-6ea4-4272-a3db-78e737e132a6 --tags System.Object[] --disable-auto-upgrade --distribution aks_edge_k3s --enable-oidc-issuer --enable-workload-identity
+az : WARNING: This operation might take a while...
+At C:\Users\cwoodland\dev\explore-iot-operations\AksEdgeQuickStartForAio.ps1:183 char:30
++ ... rrOut = $($retVal = & {az connectedk8s connect $k8sConnectArgs}) 2>&1
++                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (WARNING: This o...take a while...:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+WARNING: --- Pre-onboarding Diagnostic Check Results ---
+WARNING: Precheck summary: jobExecutionStatus=Completed; dnsCheck=Passed; outboundConnectivityCheck=Passed; 
+entraCheck=NotApplicable; crdCheck=Passed
+WARNING: --- End of Diagnostic Check Results ---
+az connectedk8s out : Step: 2026-10-17T16-27-52Z: Validating custom access token Step: 2026-10-17T16-27-52Z: Checking Provider Registrations Step: 2026-10-17T16-27-53Z: Setting KubeConfig Step: 2026-10-17T16-27-53Z: Escape Proxy Settings, if passed in Step: 2026-10-17T16-27-53Z: Checking Connectivity to Cluster Step: 2026-10-17T16-27-53Z: Do node validations Step: 2026-10-17T16-27-53Z: Install Kubectl client if it does not exist Step: 2026-10-17T16-27-53Z: Install Helm client if it does not exist Step: 2026-10-17T16-27-53Z: Starting Pre-onboarding-check Step: 2026-10-17T16-27-53Z: Creating folder for Cluster Diagnostic Checks Logs Step: 2026-10-17T16-27-53Z: Get namespace of release: cluster-diagnostic-checks Step: 2026-10-17T16-27-54Z: Determine Helmchart Export Path Step: 2026-10-17T16-27-54Z: Pulling HelmChart: mcr.microsoft.com/azurearck8s/helmchart/stable/clusterdiagnosticchecks, Version: 1.31.2 Step: 2026-10-17T16-28-00Z: The required pre-checks for onboarding have succeeded. Step: 2026-10-17T16-28-00Z: Checking if user can create ClusterRoleBindings Step: 2026-10-17T16-28-00Z: Determining Cluster Distribution and Infrastructure Step: 2026-10-17T16-28-00Z: Checking Connect RP is available in the Location passed in. Step: 2026-10-17T16-28-00Z: Check if an earlier azure-arc release exists Step: 2026-10-17T16-28-00Z: Get namespace of release: azure-arc Step: 2026-10-17T16-28-00Z: Found an earlier instance of azure-arc release {   "aadProfile": {     "adminGroupObjectIDs": null,     "enableAzureRbac": null,     "tenantId": null   },   "agentPublicKeyCertificate": "MIICCgKCAgEAukxPDhRgnlGF2WoD+gT1ddP4TN7v1tHNypS61cz/LmfKLXyZhS3oGUtbB7sSnu1AfFsosQg8hC5qqUubR9bNEWNmt0Q6vQFJ49UNpzui9is+2gXwUNWM18wWj3ZiEHzxQF+14SF5Z8ltgiMPDLiIwzj2TxC9ErU1pNijz4OIk5bGqDyeUYQrQgA0qxznApWIuD7QjBc4LQhfbiF05UyTY6blJIvw2S72sAaETAqxhgNGWEegzKVngTLLhrB8ub5RW+B9ZYXHctaaPx1GL9FTiff88Tal9MtyRkeGsQQr48wiKTJfgI/3tkEhRPuE6XgLSF4HF/xcZ72tkjc72L1g3XfmvoHRulmMrYM328JxlUtMOZ0vQzI/ij/bZZnQrq3n5NcF8LUx/SapPxVu7rUy3SuzxVlWE6Y40bloUSmDCIVtm6JYLSAuKLMvG2eQzdjvepPMJTxEOl8iegzN4ZK9sBRvR/G4jeGV0Qc96Vkqibt/jlqnaJWBxEOFOWqvgNTCsO89oBk2QDDQizZsu1E9mBYxJfC/uKyjIBk801H4fOqfRfl7oHidvr9i2i/xFVsyAH19x906nTnEbI1uakx+pBK1z9Z6IZM/PUP+G4Ld+zLqhmFnlTcfpeXCybxJusGREpHHIhg/YuX0ix9UFnB6mxeh7RxvOAN29+l0FN0PkQsCAwEAAQ==",   "agentVersion": "1.38.0",   "arcAgentProfile": {     "agentAutoUpgrade": "Disabled",     "agentErrors": [],     "agentState": "Succeeded",     "desiredAgentVersion": null,     "systemComponents": null   },   "arcAgentryConfigurations": null,   "azureHybridBenefit": "NotApplicable",   "connectivityStatus": null,   "distribution": "aks_edge_k3s",   "distributionVersion": null,   "gateway": null,   "id": "/subscriptions/6bf68138-6ea4-4272-a3db-78e737e132a6/resourceGroups/iot/providers/Microsoft.Kubernetes/connectedClusters/nhds",   "identity": {     "principalId": "49198b75-e910-467a-acf2-4adee5b53efb",     "tenantId": "16b3c013-d300-468d-ac64-7eda0820b6d3",     "type": "SystemAssigned"   },   "infrastructure": "k3s",   "kind": null,   "kubernetesVersion": "1.33.5+k3s-",   "lastConnectivityTime": "2026-10-17T16:26:06.666000+00:00",   "location": "eastus",   "managedIdentityCertificateExpirationTime": "2027-01-15T16:06:00+00:00",   "miscellaneousProperties": null,   "name": "nhds",   "offering": null,   "oidcIssuerProfile": {     "enabled": true,     "issuerUrl": "https://northamerica.oic.prod-arc.azure.com/16b3c013-d300-468d-ac64-7eda0820b6d3/b5ba8f16-dfba-4472-9eeb-5b0ba1a4d7fe/",     "selfHostedIssuerUrl": null   },   "privateLinkScopeResourceId": null,   "privateLinkState": "Disabled",   "provisioningState": "Succeeded",   "resourceGroup": "iot",   "securityProfile": {     "workloadIdentity": {       "enabled": true     }   },   "systemData": {     "createdAt": "2026-10-17T16:09:21.787288+00:00",     "createdBy": "cwoodland@microsoft.com",     "createdByType": "User",     "lastModifiedAt": "2026-10-17T16:28:21.917569+00:00",     "lastModifiedBy": "64b12d6e-6549-484c-8cc6-6281839ba394",     "lastModifiedByType": "Application"   },   "tags": {     "SKU": "AKSEdgeEssentials AKSEE Version=1.12.269.0 Host Infra=Win11Ent-26300 ClusterId=3cc3cdda-97d1-4bc8-ba7c-09dc15374db2"   },   "totalCoreCount": 4,   "totalNodeCount": 1,   "type": "microsoft.kubernetes/connectedclusters" }
+90, AgentState = Succeeded
+90, connectivityStatus =
+Arc connection status is . Waiting for status to be connected...
+89, AgentState = Succeeded
+89, connectivityStatus =
+Arc connection status is . Waiting for status to be connected...
+88, AgentState = Succeeded
+88, connectivityStatus =
+Arc connection status is . Waiting for status to be connected...
+87, AgentState = Succeeded
+87, connectivityStatus =
+Arc connection status is . Waiting for status to be connected...
+86, AgentState = Succeeded
+86, connectivityStatus =
+Arc connection status is . Waiting for status to be connected...
+85, AgentState = Succeeded
+85, connectivityStatus =
+Arc connection status is . Waiting for status to be connected...
+84, AgentState = Succeeded
+84, connectivityStatus =
+Arc connection status is . Waiting for status to be connected...
+83, AgentState = Succeeded
+83, connectivityStatus =
+Arc connection status is . Waiting for status to be connected...
+82, AgentState = Succeeded
+82, connectivityStatus =
+Arc connection status is . Waiting for status to be connected...
+81, AgentState = Succeeded
+81, connectivityStatus =
+Arc connection status is . Waiting for status to be connected...
+80, AgentState = Succeeded
+80, connectivityStatus =
+Arc connection status is . Waiting for status to be connected...
+79, AgentState = Succeeded
+79, connectivityStatus =
+Arc connection status is . Waiting for status to be connected...
+78, AgentState = Succeeded
+78, connectivityStatus = Connected
+Cluster reached connected status
+serviceAccountIssuer = https://northamerica.oic.prod-arc.azure.com/16b3c013-d300-468d-ac64-7eda0820b6d3/b5ba8f16-dfba-4472-9eeb-5b0ba1a4d7fe/
+serviceAccountIssuer = https://northamerica.oic.prod-arc.azure.com/16b3c013-d300-468d-ac64-7eda0820b6d3/b5ba8f16-dfba-4472-9eeb-5b0ba1a4d7fe/
+ApiServerReady!
+Restart ARC agents.
+deployment.apps/cluster-metadata-operator restarted
+deployment.apps/clusterconnect-agent restarted
+deployment.apps/clusteridentityoperator restarted
+deployment.apps/config-agent restarted
+deployment.apps/extension-events-collector restarted
+deployment.apps/extension-manager restarted
+deployment.apps/kube-aad-proxy restarted
+deployment.apps/resource-sync-agent restarted
+deployment.apps/telemetry-agent restarted
+az : WARNING: This command is in preview and under development. Reference and support levels: 
+https://aka.ms/CLI_refstatus
+At C:\Users\cwoodland\dev\explore-iot-operations\AksEdgeQuickStartForAio.ps1:463 char:30
++ ... retVal = & {az connectedk8s enable-features -n $ClusterName -g $Resou ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (WARNING: This c...s/CLI_refstatus:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+WARNING: This operation might take a while...
+
+WARNING: Important! Custom Location feature enablement can't be validated when using a manually provided OID. If the 
+custom location feature is not enabled, you may encounter an error when creating the custom location.
+After creating the custom location, run `az customlocation show` and check that ProvisioningState is Succeeded. If 
+ProvisoningState is Failed, then re-try this command with a  valid custom location OID to enable the feature.
+For guidance, refer to: https://aka.ms/enable-customlocation
+Step 5: Prep for AIO workload deployment
+Deploy local path provisioner
+serviceaccount/local-path-provisioner-service-account created
+clusterrole.rbac.authorization.k8s.io/local-path-provisioner-role created
+clusterrolebinding.rbac.authorization.k8s.io/local-path-provisioner-bind created
+deployment.apps/local-path-provisioner created
+storageclass.storage.k8s.io/local-path created
+configmap/local-path-config created
+Successfully deployment the local path provisioner
+Configuring firewall specific to AIO
+Add firewall rule for AIO MQTT Broker
+Configuring port proxy for AIO
+
+[10/17/2026 12:32:51]
+Acquiring 'AKS Edge Essentials - K3s' deployment information
+
+[10/17/2026 12:32:55]
+Querying IP and MAC addresses from virtual machine (cwmsft-ledge)
+ - Virtual machine MAC: 00:15:5d:b5:98:d6
+ - Virtual machine IP : 192.168.0.2 retrieved directly from virtual machine
+Configure port proxy for AIO
+Update the iptables rules
+Updated runtime iptable rules for node exporter
+Persisted iptable rules for node exporter
+Updated runtime iptable rules for port 10124
+Updated runtime iptable rules for port 8420
+iptable rule exists, skip configuring iptable rule for port 2379...
+Updated runtime iptable rules for port 50051
+Duration: 0 hrs 6 mins 23 seconds
+**********************
+Windows PowerShell transcript end
+End time: 20261017123334
+**********************

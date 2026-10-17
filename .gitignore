@@ -426,4 +426,6 @@ install.sh
 
 
 */config/aio_config.json
+quickstart/config/aksedge/
+quickstart/config/setup-runs/
 docs/branding/*
