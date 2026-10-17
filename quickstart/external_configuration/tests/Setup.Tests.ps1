@@ -1,3 +1,6 @@
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '', Justification = 'Pester shares BeforeEach variables with It blocks.')]
+param()
+
 $scriptDirectory = Split-Path $PSScriptRoot
 $entryPoint = Join-Path $scriptDirectory 'Start-IoTOperationsSetup.ps1'
 $initializer = Join-Path $scriptDirectory 'Initialize-AksEdgeForIoTOperations.ps1'
@@ -7,6 +10,16 @@ $setupAst = [Management.Automation.Language.Parser]::ParseFile($entryPoint, [ref
 foreach ($function in $setupAst.EndBlock.Statements | Where-Object { $_ -is [Management.Automation.Language.FunctionDefinitionAst] }) {
     . ([scriptblock]::Create($function.Extent.Text))
 }
+$edgeAst = [Management.Automation.Language.Parser]::ParseFile($initializer, [ref]$null, [ref]$null)
+$apiWait = $edgeAst.EndBlock.Statements | Where-Object {
+    $_ -is [Management.Automation.Language.FunctionDefinitionAst] -and $_.Name -eq 'Wait-EdgeApi'
+}
+. ([scriptblock]::Create($apiWait.Extent.Text))
+$installerSelection = $edgeAst.Find({
+    param($node)
+    $node -is [Management.Automation.Language.IfStatementAst] -and
+        $node.Clauses[0].Item1.Extent.Text.StartsWith('[Uri]::TryCreate')
+}, $true)
 
 Describe 'Setup script syntax' {
     It 'parses the coordinator and initializer without errors' {
@@ -36,6 +49,49 @@ Describe 'Readiness waits' {
     }
 }
 
+Describe 'AKS Edge installer source handling' {
+    It 'downloads HTTPS installers without passing the URL to Resolve-Path' {
+        $source = 'https://example.com/AksEdge.msi'
+        $uri = $null
+        $workDirectory = $TestDrive
+        Mock Invoke-WebRequest {}
+        Mock Resolve-Path { throw 'Resolve-Path must not receive an HTTPS URL' }
+        . ([scriptblock]::Create($installerSelection.Extent.Text))
+        $installer | Should Be (Join-Path $TestDrive 'AksEdge.msi')
+        Assert-MockCalled Invoke-WebRequest -Times 1 -Exactly
+        Assert-MockCalled Resolve-Path -Times 0 -Exactly
+    }
+    It 'resolves local installer files without downloading them' {
+        $source = Join-Path $TestDrive 'local installer.msi'
+        'test' | Set-Content -LiteralPath $source
+        $uri = $null
+        Mock Invoke-WebRequest { throw 'Local installer must not be downloaded' }
+        . ([scriptblock]::Create($installerSelection.Extent.Text))
+        $installer | Should Be $source
+        Assert-MockCalled Invoke-WebRequest -Times 0 -Exactly
+    }
+}
+
+Describe 'AKS Edge API readiness' {
+    It 'waits through a transient API failure' {
+        $ReadinessTimeoutMinutes = 1
+        $script:apiAttempt = 0
+        Mock Start-Sleep {}
+        Mock kubectl {
+            $script:apiAttempt++
+            if ($script:apiAttempt -eq 1) {
+                $global:LASTEXITCODE = 1
+                Write-Error 'API is restarting' -ErrorAction Continue
+            } else {
+                $global:LASTEXITCODE = 0
+                'ok'
+            }
+        }
+        Wait-EdgeApi
+        $script:apiAttempt | Should Be 2
+    }
+}
+
 Describe 'Configuration prompting' {
     BeforeEach {
         $NonInteractive = $true
@@ -56,12 +112,12 @@ Describe 'Configuration prompting' {
 Describe 'Permission verification' {
     It 'requires both the expected principal and the expected role' {
         $required = @(@{ PrincipalId = 'arc'; Role = 'AcrPull' })
-        Test-SetupRoleAssignments @(@{ principalId = 'arc'; roleDefinitionName = 'AcrPull' }) $required | Should Be $true
-        Test-SetupRoleAssignments @(@{ principalId = 'other'; roleDefinitionName = 'AcrPull' }) $required | Should Be $false
-        Test-SetupRoleAssignments @(@{ principalId = 'arc'; roleDefinitionName = 'Reader' }) $required | Should Be $false
+        Test-SetupRoleAssignment @(@{ principalId = 'arc'; roleDefinitionName = 'AcrPull' }) $required | Should Be $true
+        Test-SetupRoleAssignment @(@{ principalId = 'other'; roleDefinitionName = 'AcrPull' }) $required | Should Be $false
+        Test-SetupRoleAssignment @(@{ principalId = 'arc'; roleDefinitionName = 'Reader' }) $required | Should Be $false
     }
     It 'does not consider empty role query results successful' {
-        Test-SetupRoleAssignments @() @(@{ PrincipalId = 'arc'; Role = 'AcrPull' }) | Should Be $false
+        Test-SetupRoleAssignment @() @(@{ PrincipalId = 'arc'; Role = 'AcrPull' }) | Should Be $false
     }
 }
 

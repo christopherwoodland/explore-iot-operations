@@ -95,7 +95,7 @@ function Read-SetupSetting {
     return "$answer".Trim()
 }
 
-function Test-SetupRoleAssignments {
+function Test-SetupRoleAssignment {
     param([object[]]$Assignments, [object[]]$RequiredRoles)
     $ready = $true
     foreach ($required in $RequiredRoles) {
@@ -357,7 +357,7 @@ function Invoke-IoTOperationsSetup {
             Wait-SetupCondition "required RBAC on $($roleCheck.Scope)" -TimeoutSeconds ($ReadinessTimeoutMinutes * 60) -Condition {
                 $assignments = @(Invoke-SetupCommand az @('role', 'assignment', 'list', '--scope', $roleCheck.Scope,
                     '--include-inherited', '-o', 'json', '--only-show-errors') -Capture | ConvertFrom-Json)
-                Test-SetupRoleAssignments $assignments $roleCheck.Roles
+                Test-SetupRoleAssignment $assignments $roleCheck.Roles
             }
         }
         Wait-SetupCondition 'IoT Operations provisioning' -TimeoutSeconds ($ReadinessTimeoutMinutes * 60) -Condition {

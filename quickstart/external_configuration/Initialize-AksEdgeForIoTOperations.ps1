@@ -29,6 +29,7 @@ function Invoke-EdgeCommand {
 }
 
 function Wait-EdgeApi {
+    $ErrorActionPreference = 'Continue'
     $deadline = (Get-Date).AddMinutes($ReadinessTimeoutMinutes)
     do {
         $ready = & kubectl get --raw=/readyz --request-timeout=10s 2>&1
