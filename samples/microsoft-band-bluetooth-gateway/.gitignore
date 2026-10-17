@@ -1,0 +1,12 @@
+.env
+.venv/
+.external/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+certs/
+__pycache__/
+*.py[cod]
+bin/
+obj/
